@@ -36,6 +36,8 @@ report.timedOut; // waitForReady ran out of time
 | `error`   | Could not be completed (provider or network error)                                   | Retry later                                       |
 | `skipped` | Not applicable (`required: false`)                                                   | Nothing                                           |
 
+The `registration` check is informational. If the registrar lookup itself fails, it is reported as `error` with `required: false` and listed in `errors`, but it does not affect readiness.
+
 `summary` is `failed` if any required check failed, else `error` if any errored, else `pending`. Polling (`waitForReady`) stops early on `failed`.
 
 ### Restricting checks

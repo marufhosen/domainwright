@@ -59,35 +59,45 @@ export class DomainVerifier {
     const signal = input.signal ? { signal: input.signal } : {};
     const service = input.worker ? resolveWorkerService(input.worker) : undefined;
 
-    // Registration (informational unless the domain is in the registrar account).
+    // Registration (informational unless the domain is in the registrar account). A failed
+    // registrar lookup proves nothing about the domain, so it never blocks readiness.
     const registrableDomain = input.zone ? normalizeHostname(input.zone) : domain;
-    await run.check('registration', undefined, async () => {
-      const registrar = this.deps.registrar;
-      if (!registrar?.getDomain || !registrar.capabilities.getDomain) {
-        return { status: 'skipped', required: false, message: 'No registrar adapter with domain lookup is configured' };
-      }
-      const registered = await registrar.getDomain(registrableDomain, signal);
-      if (!registered) {
+    await run.check(
+      'registration',
+      undefined,
+      async () => {
+        const registrar = this.deps.registrar;
+        if (!registrar?.getDomain || !registrar.capabilities.getDomain) {
+          return {
+            status: 'skipped',
+            required: false,
+            message: 'No registrar adapter with domain lookup is configured',
+          };
+        }
+        const registered = await registrar.getDomain(registrableDomain, signal);
+        if (!registered) {
+          return {
+            status: 'skipped',
+            required: false,
+            message: `${registrableDomain} is not in the ${registrar.displayName} account (registered elsewhere)`,
+          };
+        }
+        const expired = registered.expiresAt !== null && Date.parse(registered.expiresAt) < Date.now();
         return {
-          status: 'skipped',
-          required: false,
-          message: `${registrableDomain} is not in the ${registrar.displayName} account (registered elsewhere)`,
+          status: expired ? 'failed' : 'passed',
+          required: true,
+          message: expired
+            ? `Registration expired on ${registered.expiresAt}`
+            : `Registered with ${registrar.displayName}`,
+          details: {
+            expiresAt: registered.expiresAt,
+            autoRenew: registered.autoRenew,
+            nameservers: registered.nameservers,
+          },
         };
-      }
-      const expired = registered.expiresAt !== null && Date.parse(registered.expiresAt) < Date.now();
-      return {
-        status: expired ? 'failed' : 'passed',
-        required: true,
-        message: expired
-          ? `Registration expired on ${registered.expiresAt}`
-          : `Registered with ${registrar.displayName}`,
-        details: {
-          expiresAt: registered.expiresAt,
-          autoRenew: registered.autoRenew,
-          nameservers: registered.nameservers,
-        },
-      };
-    });
+      },
+      { informational: true },
+    );
     const registrarNameservers = run.get('registration')?.details?.nameservers as string[] | undefined;
 
     if (input.routing?.strategy === 'saas-custom-hostname') {
@@ -601,7 +611,16 @@ class CheckRun {
     this.results.push(result);
   }
 
-  async check(id: CheckId, hostname: string | undefined, fn: () => Promise<CheckOutcome>): Promise<void> {
+  /**
+   * Run one check. A thrown error becomes an `error` result; `informational` checks report it
+   * with `required: false`, so it is visible but does not decide readiness.
+   */
+  async check(
+    id: CheckId,
+    hostname: string | undefined,
+    fn: () => Promise<CheckOutcome>,
+    options: { informational?: boolean } = {},
+  ): Promise<void> {
     if (this.runnable && !this.runnable.has(id)) return;
     let outcome: CheckOutcome;
     try {
@@ -609,7 +628,7 @@ class CheckRun {
     } catch (error) {
       if (isDomainPilotError(error, 'ABORTED')) throw error;
       const serialized = serializeError(error);
-      outcome = { status: 'error', required: true, message: serialized.message };
+      outcome = { status: 'error', required: !options.informational, message: serialized.message };
       this.errors.push({
         check: id,
         ...(hostname ? { hostname } : {}),

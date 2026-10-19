@@ -105,6 +105,52 @@ describe('domains.verify', () => {
     expect(report.summary).toBe('error');
   });
 
+  it('reports a failed registrar lookup without blocking readiness (#5)', async () => {
+    const env = createTestEnv();
+    const zone = env.cf.addZone('ready.com', 'active');
+    await env
+      .client()
+      .cloudflare.workers.customDomains.attach({ hostname: 'ready.com', service: 'app', zoneId: zone.id });
+    env.dns.set('ready.com', 'A', ['104.21.0.1']);
+    env.sites.set('ready.com', () => new Response('ok'));
+    // Wrong registrar credentials: every name.com lookup returns 401.
+    const client = env.client({
+      registrar: { provider: 'namecom', username: 'other-test', apiToken: 'wrong-token', environment: 'sandbox' },
+    });
+
+    const report = await client.domains.verify({ domain: 'ready.com', worker: { name: 'app' } });
+    expect(byId(report.checks, 'registration')).toMatchObject({ status: 'error', required: false });
+    expect(report.errors).toContainEqual(
+      expect.objectContaining({
+        check: 'registration',
+        status: 'error',
+        error: expect.objectContaining({ code: 'AUTHENTICATION_FAILED' }),
+      }),
+    );
+    expect(report.verified).toBe(true);
+    expect(report.summary).toBe('verified');
+  });
+
+  it('still fails an expired registration (#5)', async () => {
+    const env = createTestEnv();
+    const zone = env.cf.addZone('expired.com', 'active');
+    const client = env.client();
+    await client.cloudflare.workers.customDomains.attach({ hostname: 'expired.com', service: 'app', zoneId: zone.id });
+    env.namecom.owned.set('expired.com', {
+      domainName: 'expired.com',
+      createDate: '2020-01-01T00:00:00Z',
+      expireDate: '2021-01-01T00:00:00Z',
+      autorenewEnabled: false,
+      locked: true,
+      privacyEnabled: true,
+      nameservers: ['ada.ns.cloudflare.com', 'bob.ns.cloudflare.com'],
+      renewalPrice: 12.99,
+    });
+    const report = await client.domains.verify({ domain: 'expired.com', https: false });
+    expect(byId(report.checks, 'registration')).toMatchObject({ status: 'failed', required: true });
+    expect(report.summary).toBe('failed');
+  });
+
   it('polls until ready when waitForReady is set', async () => {
     const env = createTestEnv();
     const zone = env.cf.addZone('poll.com', 'active');
