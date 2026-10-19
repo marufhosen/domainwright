@@ -163,6 +163,40 @@ describe('setupCustomDomain: purchase', () => {
     expect(result.state.resources.registration).toBeUndefined();
   });
 
+  it('keeps the previous idempotency key when the checkpoint fails on resume (#1)', async () => {
+    const env = createTestEnv();
+    env.namecom.nextCreate = 'network';
+    const first = await env.client().workflows.setupCustomDomain(purchase);
+    expect(first.state.resources.registration).toMatchObject({ status: 'unknown' });
+    const originalKey = first.state.resources.registration!.idempotencyKey;
+
+    // Resume, but the pre-purchase checkpoint fails once.
+    let failed = false;
+    let persisted: SetupWorkflowState | undefined;
+    const second = await env.client().workflows.setupCustomDomain({
+      ...purchase,
+      resumeFrom: first.state,
+      onCheckpoint: (s) => {
+        if (!failed && s.resources.registration?.status === 'submitting') {
+          failed = true;
+          throw new Error('database down');
+        }
+        persisted = s;
+      },
+    });
+    expect(stepStatus(second).registration).toBe('failed');
+    expect(persisted?.resources.registration).toMatchObject({ status: 'unknown', idempotencyKey: originalKey });
+    expect(second.state.resources.registration?.idempotencyKey).toBe(originalKey);
+
+    // The next resume repeats the purchase with the original key only.
+    await env.client().workflows.setupCustomDomain({ ...purchase, resumeFrom: persisted! });
+    const keys = env.namecom.calls
+      .filter((c) => c.method === 'POST' && c.path === '/core/v1/domains')
+      .map((c) => c.headers['x-idempotency-key']);
+    expect(new Set(keys)).toEqual(new Set([originalKey]));
+    expect(env.namecom.orders).toBe(1);
+  });
+
   it('stops on a payment failure without touching Cloudflare', async () => {
     const env = createTestEnv();
     env.namecom.nextCreate = 'payment';

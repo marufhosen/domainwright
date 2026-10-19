@@ -199,6 +199,7 @@ Your application stores the tenant-to-domain mapping and the workflow state; Dom
 - [Errors, retries and recovery](docs/errors.md)
 - [Removing a domain safely](docs/removal.md)
 - [Multi-tenant integration](docs/multi-tenant.md)
+- [Using DomainPilot with React and Next.js](docs/react-and-nextjs.md)
 - [Next.js and Cloudflare Workers integration](docs/nextjs-cloudflare-workers.md)
 - [Registrars](docs/registrars.md)
 - [Runtime compatibility and limitations](docs/runtime-and-limitations.md)
