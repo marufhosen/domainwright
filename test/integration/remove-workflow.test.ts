@@ -109,6 +109,74 @@ describe('removeCustomDomain', () => {
   });
 });
 
+describe('removeCustomDomain: SaaS custom hostnames (#6)', () => {
+  async function saasEnv() {
+    const env = createTestEnv();
+    const client = env.client();
+    const saas = env.cf.addZone('platform.com', 'active');
+    env.cf.customHostnames.push({
+      id: 'f'.repeat(32),
+      zone_id: saas.id,
+      hostname: 'shop.tenant-a.com',
+      status: 'active',
+      ssl: { status: 'active', method: 'http', validation_records: [], validation_errors: [] },
+      ownership_verification: { type: 'txt', name: '_cf-custom-hostname.shop.tenant-a.com', value: 'v' },
+    });
+    const challenge = await client.ownership.createChallenge({ hostname: 'shop.tenant-a.com', tenantId: 'tenant-a' });
+    env.dns.set(challenge.record.name, 'TXT', [challenge.record.content]);
+    const input = {
+      domain: 'shop.tenant-a.com',
+      routing: {
+        strategy: 'saas-custom-hostname' as const,
+        saasZoneId: saas.id,
+        cnameTarget: 'customers.platform.com',
+      },
+      confirm: true,
+    };
+    return { env, client, input };
+  }
+
+  it('refuses to remove a hostname whose challenge belongs to another tenant', async () => {
+    const { env, client, input } = await saasEnv();
+    const result = await client.workflows.removeCustomDomain({ ...input, tenantId: 'tenant-b' });
+    expect(result.lifecycle).toBe('failed');
+    expect(result.errors[0]).toMatchObject({ step: 'tenant', code: 'TENANT_CONFLICT' });
+    expect(result.removed.customHostnames).toEqual([]);
+    expect(env.cf.customHostnames).toHaveLength(1);
+  });
+
+  it('requires the owning tenantId when a challenge is published', async () => {
+    const { env, client, input } = await saasEnv();
+    const result = await client.workflows.removeCustomDomain(input);
+    expect(result.errors[0]).toMatchObject({ step: 'tenant', code: 'TENANT_CONFLICT' });
+    expect(env.cf.customHostnames).toHaveLength(1);
+  });
+
+  it('stops when the challenge cannot be looked up', async () => {
+    const { env, client, input } = await saasEnv();
+    env.dns.failing = true;
+    const result = await client.workflows.removeCustomDomain({ ...input, tenantId: 'tenant-a' });
+    expect(result.errors[0]).toMatchObject({ step: 'tenant', code: 'NETWORK_ERROR', retryable: true });
+    expect(env.cf.customHostnames).toHaveLength(1);
+  });
+
+  it('removes the hostname for the owning tenant', async () => {
+    const { env, client, input } = await saasEnv();
+    const result = await client.workflows.removeCustomDomain({ ...input, tenantId: 'tenant-a' });
+    expect(result.lifecycle).toBe('disabled');
+    expect(result.removed.customHostnames).toEqual(['shop.tenant-a.com']);
+    expect(env.cf.customHostnames).toHaveLength(0);
+  });
+
+  it('removes the hostname when the tenant has since removed the challenge', async () => {
+    const { env, client, input } = await saasEnv();
+    env.dns.clear('_domainpilot.shop.tenant-a.com');
+    const result = await client.workflows.removeCustomDomain({ ...input, tenantId: 'tenant-a' });
+    expect(result.lifecycle).toBe('disabled');
+    expect(env.cf.customHostnames).toHaveLength(0);
+  });
+});
+
 describe('getStatus', () => {
   it('maps verification onto the lifecycle without changing anything', async () => {
     const env = createTestEnv();

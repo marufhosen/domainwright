@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `OwnershipModule.publishedChallenges(hostname)` lists the DomainPilot challenge values published for a hostname.
+
+### Fixed
+
+- `removeCustomDomain` with `saas-custom-hostname` routing now checks the tenant's ownership challenge and refuses with `TENANT_CONFLICT` when it belongs to a different tenant, instead of removing any tenant's custom hostname ([#6](https://github.com/marufhosen/domain-pilot/issues/6)).
+
 ## [0.1.0] - Unreleased
 
 Initial version.
