@@ -38,6 +38,10 @@ report.timedOut; // waitForReady ran out of time
 
 `summary` is `failed` if any required check failed, else `error` if any errored, else `pending`. Polling (`waitForReady`) stops early on `failed`.
 
+### Restricting checks
+
+`checks` limits the report to the listed checks. Checks they depend on still run so the listed ones can be evaluated, for example `zone` and `zone-activation` for `certificate`, and `certificate` and `dns-resolution` for `https`. Those prerequisites are left out of the report unless they failed or errored, in which case they appear so the cause is visible. Checks outside the list and its prerequisites do not run.
+
 ## Checks
 
 | ID                | Per hostname | Zone strategies                                                                                                                        | SaaS strategy                                                                     |
