@@ -10,7 +10,7 @@ import type { Zone } from '../cloudflare/zones.js';
 import { nameserverInstructions } from '../cloudflare/zones.js';
 import { isDomainPilotError, serializeError } from '../core/errors.js';
 import type { FetchLike } from '../core/http.js';
-import type { CheckId, CheckResult, CheckStatus, OutstandingAction } from '../core/types.js';
+import type { CheckId, CheckResult, CheckStatus, OutstandingAction, RequestOptions } from '../core/types.js';
 import { resolveWorkerService } from '../core/types.js';
 import type { OwnershipModule } from '../ownership/ownership.js';
 import type { RegistrarAdapter } from '../registrars/types.js';
@@ -414,7 +414,19 @@ export class DomainVerifier {
             message: `CNAME points to ${answer.values.join(', ')}, expected ${target}`,
             action,
           };
-        // Flattened apex records cannot be checked by name; rely on Cloudflare's hostname status.
+        // No CNAME is visible. Apex hostnames cannot have one: CNAME flattening, ALIAS or ANAME
+        // records publish the target's addresses as A/AAAA instead. Accept the hostname when it
+        // resolves to the same addresses as the target. (The custom hostname's Cloudflare status
+        // is not proof: pre-validation activates it before the tenant's DNS changes.)
+        const flattened = await this.sharedAddresses(hostname, target, signal);
+        if (flattened.length) {
+          return {
+            status: 'passed',
+            required: true,
+            message: `Resolves to the same addresses as ${target} (flattened CNAME or ALIAS record)`,
+            details: { flattened: true, addresses: flattened },
+          };
+        }
         return { status: 'pending', required: true, message: `No CNAME to ${target} observed`, action };
       });
 
@@ -502,6 +514,20 @@ export class DomainVerifier {
     }
 
     await this.publicChecks(input, hostnames, run, () => true);
+  }
+
+  /** A/AAAA addresses `hostname` shares with `target` in public DNS. */
+  private async sharedAddresses(hostname: string, target: string, signal: RequestOptions): Promise<string[]> {
+    const lookup = async (name: string): Promise<string[]> => {
+      const [a, aaaa] = await Promise.all([
+        this.deps.resolver.resolve(name, 'A', signal),
+        this.deps.resolver.resolve(name, 'AAAA', signal),
+      ]);
+      return [...a.values, ...aaaa.values];
+    };
+    const [own, expected] = await Promise.all([lookup(hostname), lookup(target)]);
+    const targetSet = new Set(expected);
+    return own.filter((address) => targetSet.has(address));
   }
 
   /** Public DNS resolution and HTTPS reachability. */

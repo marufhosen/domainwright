@@ -59,6 +59,8 @@ The `registration` check is informational. If the registrar lookup itself fails,
 | `dns-resolution`  | Yes          | Public A/AAAA answers exist (DNS-over-HTTPS)                                                                                           | Same                                                                              |
 | `https`           | Yes          | An HTTPS request completes and meets `https` expectations                                                                              | Same                                                                              |
 
+For SaaS apex hostnames, which cannot have a CNAME, `dns-records` also passes when the hostname resolves to the same A/AAAA addresses as `cnameTarget`. This is what CNAME flattening, ALIAS and ANAME records publish.
+
 ## Making the HTTPS check prove the right application
 
 By default any HTTP status below 500 passes, which proves DNS, TLS and that _something_ answers. To prove the hostname reaches the right tenant's application, have your Worker expose a health route that echoes the tenant it resolved, and assert on it:

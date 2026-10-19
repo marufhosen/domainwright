@@ -15,6 +15,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - `setupCustomDomain` records registrations the registrar reports as `pending` or `action-required` with that status instead of `registered`, so a resumed run keeps waiting (checking the registrar account) instead of reporting the registration as complete. `action-required` now returns a `manual` action ([#2](https://github.com/marufhosen/domain-pilot/issues/2)).
 - `verify({ checks })` now runs the prerequisites of the requested checks (for example `zone` for `routing`, `certificate` and `dns-resolution` for `https`) instead of reporting them `blocked`, so a restricted verification can pass. Failed or errored prerequisites are included in the report ([#3](https://github.com/marufhosen/domain-pilot/issues/3)).
 - A registrar lookup that throws (bad credentials, outage, rate limit) no longer turns the verification report into `error`: the informational `registration` check reports `error` with `required: false` and readiness is decided by the other checks ([#5](https://github.com/marufhosen/domain-pilot/issues/5)).
+- SaaS custom hostnames on an apex domain can now be verified: when no CNAME is visible (CNAME flattening, ALIAS or ANAME), the `dns-records` check passes if the hostname resolves to the same addresses as `cnameTarget`, instead of staying `pending` forever ([#4](https://github.com/marufhosen/domain-pilot/issues/4)).
 
 ## [0.1.0] - Unreleased
 
