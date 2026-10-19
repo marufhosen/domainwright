@@ -59,35 +59,45 @@ export class DomainVerifier {
     const signal = input.signal ? { signal: input.signal } : {};
     const service = input.worker ? resolveWorkerService(input.worker) : undefined;
 
-    // Registration (informational unless the domain is in the registrar account).
+    // Registration (informational unless the domain is in the registrar account). A failed
+    // registrar lookup proves nothing about the domain, so it never blocks readiness.
     const registrableDomain = input.zone ? normalizeHostname(input.zone) : domain;
-    await run.check('registration', undefined, async () => {
-      const registrar = this.deps.registrar;
-      if (!registrar?.getDomain || !registrar.capabilities.getDomain) {
-        return { status: 'skipped', required: false, message: 'No registrar adapter with domain lookup is configured' };
-      }
-      const registered = await registrar.getDomain(registrableDomain, signal);
-      if (!registered) {
+    await run.check(
+      'registration',
+      undefined,
+      async () => {
+        const registrar = this.deps.registrar;
+        if (!registrar?.getDomain || !registrar.capabilities.getDomain) {
+          return {
+            status: 'skipped',
+            required: false,
+            message: 'No registrar adapter with domain lookup is configured',
+          };
+        }
+        const registered = await registrar.getDomain(registrableDomain, signal);
+        if (!registered) {
+          return {
+            status: 'skipped',
+            required: false,
+            message: `${registrableDomain} is not in the ${registrar.displayName} account (registered elsewhere)`,
+          };
+        }
+        const expired = registered.expiresAt !== null && Date.parse(registered.expiresAt) < Date.now();
         return {
-          status: 'skipped',
-          required: false,
-          message: `${registrableDomain} is not in the ${registrar.displayName} account (registered elsewhere)`,
+          status: expired ? 'failed' : 'passed',
+          required: true,
+          message: expired
+            ? `Registration expired on ${registered.expiresAt}`
+            : `Registered with ${registrar.displayName}`,
+          details: {
+            expiresAt: registered.expiresAt,
+            autoRenew: registered.autoRenew,
+            nameservers: registered.nameservers,
+          },
         };
-      }
-      const expired = registered.expiresAt !== null && Date.parse(registered.expiresAt) < Date.now();
-      return {
-        status: expired ? 'failed' : 'passed',
-        required: true,
-        message: expired
-          ? `Registration expired on ${registered.expiresAt}`
-          : `Registered with ${registrar.displayName}`,
-        details: {
-          expiresAt: registered.expiresAt,
-          autoRenew: registered.autoRenew,
-          nameservers: registered.nameservers,
-        },
-      };
-    });
+      },
+      { informational: true },
+    );
     const registrarNameservers = run.get('registration')?.details?.nameservers as string[] | undefined;
 
     if (input.routing?.strategy === 'saas-custom-hostname') {
@@ -577,31 +587,74 @@ export class DomainVerifier {
 
 type CheckOutcome = Omit<CheckResult, 'id' | 'hostname'>;
 
+/**
+ * Checks whose results other checks read. When `checks` restricts the run, these still run
+ * so the requested checks can be evaluated instead of reporting `blocked`.
+ */
+const PREREQUISITES: Partial<Record<CheckId, CheckId[]>> = {
+  nameservers: ['zone', 'registration'],
+  'zone-activation': ['zone'],
+  ownership: ['zone-activation'],
+  'dns-records': ['zone'],
+  routing: ['zone'],
+  certificate: ['zone-activation'],
+  'dns-resolution': ['zone-activation'],
+  https: ['certificate', 'dns-resolution'],
+};
+
+/** `ids` plus every check they depend on, transitively. */
+function withPrerequisites(ids: readonly CheckId[]): Set<CheckId> {
+  const out = new Set<CheckId>();
+  const visit = (id: CheckId): void => {
+    if (out.has(id)) return;
+    out.add(id);
+    for (const dep of PREREQUISITES[id] ?? []) visit(dep);
+  };
+  ids.forEach(visit);
+  return out;
+}
+
 /** Collects check results and converts thrown provider errors into `error` results. */
 class CheckRun {
   private readonly results: CheckResult[] = [];
   private readonly errors: CheckError[] = [];
+  /** Checks the caller asked for; `undefined` means all. */
+  private readonly requested: Set<CheckId> | undefined;
+  /** Requested checks plus their prerequisites. */
+  private readonly runnable: Set<CheckId> | undefined;
 
-  constructor(private readonly only?: CheckId[]) {}
+  constructor(only?: CheckId[]) {
+    this.requested = only ? new Set(only) : undefined;
+    this.runnable = only ? withPrerequisites(only) : undefined;
+  }
 
   get(id: CheckId, hostname?: string): CheckResult | undefined {
     return this.results.find((r) => r.id === id && r.hostname === hostname);
   }
 
   add(result: CheckResult): void {
-    if (this.only && !this.only.includes(result.id)) return;
+    if (this.runnable && !this.runnable.has(result.id)) return;
     this.results.push(result);
   }
 
-  async check(id: CheckId, hostname: string | undefined, fn: () => Promise<CheckOutcome>): Promise<void> {
-    if (this.only && !this.only.includes(id)) return;
+  /**
+   * Run one check. A thrown error becomes an `error` result; `informational` checks report it
+   * with `required: false`, so it is visible but does not decide readiness.
+   */
+  async check(
+    id: CheckId,
+    hostname: string | undefined,
+    fn: () => Promise<CheckOutcome>,
+    options: { informational?: boolean } = {},
+  ): Promise<void> {
+    if (this.runnable && !this.runnable.has(id)) return;
     let outcome: CheckOutcome;
     try {
       outcome = await fn();
     } catch (error) {
       if (isDomainPilotError(error, 'ABORTED')) throw error;
       const serialized = serializeError(error);
-      outcome = { status: 'error', required: true, message: serialized.message };
+      outcome = { status: 'error', required: !options.informational, message: serialized.message };
       this.errors.push({
         check: id,
         ...(hostname ? { hostname } : {}),
@@ -624,7 +677,13 @@ class CheckRun {
     attempts: number,
     timedOut: boolean,
   ): VerificationReport {
-    const required = this.results.filter((r) => r.required);
+    // Report the requested checks. A prerequisite that ran only to evaluate them is
+    // included when it failed or errored, because it explains why they cannot pass.
+    const results = this.results.filter(
+      (r) =>
+        !this.requested || this.requested.has(r.id) || (r.required && (r.status === 'failed' || r.status === 'error')),
+    );
+    const required = results.filter((r) => r.required);
     const has = (status: CheckStatus): boolean => required.some((r) => r.status === status);
     const verified = required.length > 0 && required.every((r) => r.status === 'passed');
     const summary: VerificationReport['summary'] = verified
@@ -635,16 +694,17 @@ class CheckRun {
           ? 'error'
           : 'pending';
     const outstandingActions = dedupeActions(
-      this.results.flatMap((r) => (r.action && r.status !== 'passed' ? [r.action] : [])),
+      results.flatMap((r) => (r.action && r.status !== 'passed' ? [r.action] : [])),
     );
+    const reported = new Set(results.map((r) => r.id));
     return {
       domain,
       hostnames,
       strategy,
       verified,
       summary,
-      checks: this.results,
-      errors: this.errors,
+      checks: results,
+      errors: this.errors.filter((e) => reported.has(e.check)),
       outstandingActions,
       checkedAt: new Date().toISOString(),
       attempts,

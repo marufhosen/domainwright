@@ -7,7 +7,13 @@
 import type { DnsRecord } from '../cloudflare/dns.js';
 import { routeMatchesHostname } from '../cloudflare/workers.js';
 import type { Zone } from '../cloudflare/zones.js';
-import { ConfirmationRequiredError, TenantConflictError, ValidationError, serializeError } from '../core/errors.js';
+import {
+  ConfirmationRequiredError,
+  DomainPilotError,
+  TenantConflictError,
+  ValidationError,
+  serializeError,
+} from '../core/errors.js';
 import { resolveWorkerService } from '../core/types.js';
 import { normalizeHostname } from '../utils/validation.js';
 import type { RoutingSpec } from '../verification/types.js';
@@ -97,7 +103,28 @@ export async function removeCustomDomain(
 
   const tenantOk = await run('tenant', async () => {
     if (routing.strategy === 'saas-custom-hostname') {
-      return 'Tenant check relies on the custom hostname belonging to the SaaS zone';
+      if (!ownership) return 'Ownership not configured; skipping challenge check';
+      // The tenant's challenge TXT that onboarding required lives in the tenant's DNS. A
+      // challenge for another tenant stops the removal, as a zone marker does.
+      for (const hostname of hostnames) {
+        if (input.tenantId === undefined) {
+          const published = await ownership.publishedChallenges(hostname, signal);
+          if (published.status === 'error') throw challengeLookupError(hostname);
+          if (published.values.length) {
+            throw new TenantConflictError(
+              `${hostname} publishes a tenant ownership challenge; pass the owning tenantId to remove it`,
+              { hostname },
+            );
+          }
+          continue;
+        }
+        const check = await ownership.verifyChallenge({ hostname, tenantId: input.tenantId, ...signal });
+        if (check.status === 'error') throw challengeLookupError(hostname);
+        if (check.status === 'failed') {
+          throw new TenantConflictError(`${hostname} belongs to a different tenant`, { hostname });
+        }
+      }
+      return 'No ownership challenge for a different tenant is published';
     }
     zone = await cloudflare.zones.find(zoneName, signal);
     if (!zone) return `Zone ${zoneName} not found; nothing to check`;
@@ -237,6 +264,14 @@ export async function removeCustomDomain(
   });
 
   return finish();
+}
+
+function challengeLookupError(hostname: string): DomainPilotError {
+  return new DomainPilotError('NETWORK_ERROR', `Could not look up the ownership challenge for ${hostname}`, {
+    provider: 'dns',
+    retryable: true,
+    details: { hostname },
+  });
 }
 
 function isRemovable(record: DnsRecord, tenantTag: string | undefined): boolean {

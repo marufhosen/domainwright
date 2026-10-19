@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CheckResult } from '../../src/index.js';
+import type { CheckId, CheckResult } from '../../src/index.js';
 import { decodeTxt } from '../../src/verification/resolver.js';
 import { createTestEnv } from '../fakes/env.js';
 
@@ -105,6 +105,52 @@ describe('domains.verify', () => {
     expect(report.summary).toBe('error');
   });
 
+  it('reports a failed registrar lookup without blocking readiness (#5)', async () => {
+    const env = createTestEnv();
+    const zone = env.cf.addZone('ready.com', 'active');
+    await env
+      .client()
+      .cloudflare.workers.customDomains.attach({ hostname: 'ready.com', service: 'app', zoneId: zone.id });
+    env.dns.set('ready.com', 'A', ['104.21.0.1']);
+    env.sites.set('ready.com', () => new Response('ok'));
+    // Wrong registrar credentials: every name.com lookup returns 401.
+    const client = env.client({
+      registrar: { provider: 'namecom', username: 'other-test', apiToken: 'wrong-token', environment: 'sandbox' },
+    });
+
+    const report = await client.domains.verify({ domain: 'ready.com', worker: { name: 'app' } });
+    expect(byId(report.checks, 'registration')).toMatchObject({ status: 'error', required: false });
+    expect(report.errors).toContainEqual(
+      expect.objectContaining({
+        check: 'registration',
+        status: 'error',
+        error: expect.objectContaining({ code: 'AUTHENTICATION_FAILED' }),
+      }),
+    );
+    expect(report.verified).toBe(true);
+    expect(report.summary).toBe('verified');
+  });
+
+  it('still fails an expired registration (#5)', async () => {
+    const env = createTestEnv();
+    const zone = env.cf.addZone('expired.com', 'active');
+    const client = env.client();
+    await client.cloudflare.workers.customDomains.attach({ hostname: 'expired.com', service: 'app', zoneId: zone.id });
+    env.namecom.owned.set('expired.com', {
+      domainName: 'expired.com',
+      createDate: '2020-01-01T00:00:00Z',
+      expireDate: '2021-01-01T00:00:00Z',
+      autorenewEnabled: false,
+      locked: true,
+      privacyEnabled: true,
+      nameservers: ['ada.ns.cloudflare.com', 'bob.ns.cloudflare.com'],
+      renewalPrice: 12.99,
+    });
+    const report = await client.domains.verify({ domain: 'expired.com', https: false });
+    expect(byId(report.checks, 'registration')).toMatchObject({ status: 'failed', required: true });
+    expect(report.summary).toBe('failed');
+  });
+
   it('polls until ready when waitForReady is set', async () => {
     const env = createTestEnv();
     const zone = env.cf.addZone('poll.com', 'active');
@@ -126,6 +172,48 @@ describe('domains.verify', () => {
     });
     expect(report.verified).toBe(true);
     expect(report.attempts).toBeGreaterThan(1);
+  });
+
+  describe('restricted with `checks` (#3)', () => {
+    async function readyDomain() {
+      const env = createTestEnv();
+      const zone = env.cf.addZone('ready.com', 'active');
+      const client = env.client();
+      await client.cloudflare.workers.customDomains.attach({ hostname: 'ready.com', service: 'app', zoneId: zone.id });
+      env.dns.set('ready.com', 'A', ['104.21.0.1']);
+      env.sites.set('ready.com', () => new Response('ok'));
+      return { env, client };
+    }
+
+    it.each<[CheckId[]]>([[['routing']], [['https']], [['certificate']], [['dns-resolution']], [['routing', 'https']]])(
+      'evaluates %j on a ready domain and reports only the requested checks',
+      async (checks) => {
+        const { client } = await readyDomain();
+        const report = await client.domains.verify({ domain: 'ready.com', worker: { name: 'app' }, checks });
+        expect(report.verified).toBe(true);
+        expect(report.summary).toBe('verified');
+        expect(new Set(report.checks.map((c) => c.id))).toEqual(new Set(checks));
+        expect(report.checks.every((c) => c.status === 'passed')).toBe(true);
+      },
+    );
+
+    it('surfaces a failed prerequisite that explains a blocked check', async () => {
+      const env = createTestEnv();
+      const report = await env.client().domains.verify({ domain: 'missing.com', checks: ['routing'] });
+      expect(report.summary).toBe('failed');
+      expect(byId(report.checks, 'zone')?.status).toBe('failed');
+      expect(byId(report.checks, 'routing')?.status).toBe('blocked');
+      expect(report.errors.map((e) => e.check)).toEqual(['zone']);
+    });
+
+    it('does not run checks outside the requested set and their prerequisites', async () => {
+      const { env, client } = await readyDomain();
+      const before = env.requests.length;
+      await client.domains.verify({ domain: 'ready.com', checks: ['zone'] });
+      const made = env.requests.slice(before);
+      expect(made.some((r) => r.includes('ready.com/'))).toBe(false); // no HTTPS probe
+      expect(made.some((r) => r.includes('/workers/domains'))).toBe(false); // no routing lookup
+    });
   });
 
   it('times out with the last observed state', async () => {

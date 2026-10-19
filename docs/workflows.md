@@ -70,8 +70,9 @@ const result = await client.workflows.setupCustomDomain({ ...sameInput, resumeFr
 
 - The state must match the domain, tenant, strategy and Worker, otherwise `WORKFLOW_STATE_MISMATCH` is thrown.
 - A succeeded `registration` step is skipped. Every other step re-runs, which is cheap (lookups) and catches drift.
+- If the registrar accepted the order but reported it `pending` or `action-required`, the state records that status and the step waits. A resumed run checks the registrar account and succeeds once the domain appears there; it never submits the order again.
 - If a purchase was sent but its outcome is unknown, the resumed run first looks the domain up in the registrar account; if it is there, the step succeeds without buying again. Otherwise it repeats the request with the same idempotency key, which name.com replays instead of charging twice, but only within 55 minutes of the original attempt. After that, the step fails with `PURCHASE_OUTCOME_UNKNOWN` and asks you to check the order history.
-- If `onCheckpoint` throws right before a purchase, the purchase is not sent.
+- If `onCheckpoint` throws right before a purchase, the purchase is not sent. When the run was resuming an earlier attempt, that attempt's idempotency key is kept in the state so a later resume can only repeat the same request.
 
 A typical integration resumes on a schedule (a Cron Trigger or queue) until `lifecycle` is `active` or `failed`, and shows `outstandingActions` to the tenant meanwhile.
 
