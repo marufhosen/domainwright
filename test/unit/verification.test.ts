@@ -128,6 +128,54 @@ describe('domains.verify', () => {
     expect(report.attempts).toBeGreaterThan(1);
   });
 
+  describe('SaaS apex hostnames without a visible CNAME (#4)', () => {
+    function saasApex() {
+      const env = createTestEnv();
+      const saas = env.cf.addZone('platform.com', 'active');
+      env.cf.routes.push({ id: 'd'.repeat(32), zone_id: saas.id, pattern: '*/*', script: 'app' });
+      // Active custom hostname and certificate, e.g. after TXT pre-validation.
+      env.cf.customHostnames.push({
+        id: 'e'.repeat(32),
+        zone_id: saas.id,
+        hostname: 'tenant.com',
+        status: 'active',
+        ssl: { status: 'active', method: 'txt', validation_records: [], validation_errors: [] },
+        ownership_verification: { type: 'txt', name: '_cf-custom-hostname.tenant.com', value: 'v' },
+      });
+      env.dns.set('customers.platform.com', 'A', ['104.16.0.1', '104.16.0.2']);
+      env.sites.set('tenant.com', () => new Response('ok'));
+      const input = {
+        domain: 'tenant.com',
+        worker: { name: 'app' },
+        routing: {
+          strategy: 'saas-custom-hostname' as const,
+          saasZoneId: saas.id,
+          cnameTarget: 'customers.platform.com',
+        },
+      };
+      return { env, input };
+    }
+
+    it('passes when a flattened record resolves to the target addresses', async () => {
+      const { env, input } = saasApex();
+      env.dns.set('tenant.com', 'A', ['104.16.0.2']); // flattened: no CNAME, the target's address
+      const report = await env.client().domains.verify(input);
+      expect(byId(report.checks, 'dns-records', 'tenant.com')).toMatchObject({
+        status: 'passed',
+        details: { flattened: true, addresses: ['104.16.0.2'] },
+      });
+      expect(report.verified).toBe(true);
+    });
+
+    it('stays pending when the hostname still points elsewhere, even if Cloudflare reports it active', async () => {
+      const { env, input } = saasApex();
+      env.dns.set('tenant.com', 'A', ['203.0.113.10']); // still the tenant's old host
+      const report = await env.client().domains.verify(input);
+      expect(byId(report.checks, 'dns-records', 'tenant.com')?.status).toBe('pending');
+      expect(report.verified).toBe(false);
+    });
+  });
+
   it('times out with the last observed state', async () => {
     const env = createTestEnv();
     env.cf.addZone('slow.com', 'pending');

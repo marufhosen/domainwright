@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- SaaS custom hostnames on an apex domain can now be verified: when no CNAME is visible (CNAME flattening, ALIAS or ANAME), the `dns-records` check passes if the hostname resolves to the same addresses as `cnameTarget`, instead of staying `pending` forever ([#4](https://github.com/marufhosen/domain-pilot/issues/4)).
+
 ## [0.1.0] - Unreleased
 
 Initial version.
