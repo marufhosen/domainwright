@@ -108,6 +108,20 @@ export class OwnershipModule {
     return timingSafeEqual(content.replace(/^"|"$/g, ''), expected);
   }
 
+  /**
+   * DomainPilot challenge values (for any tenant) published in public DNS for `hostname`.
+   * `status: 'error'` means the lookup failed and nothing can be concluded.
+   */
+  async publishedChallenges(
+    hostname: string,
+    options: RequestOptions = {},
+  ): Promise<{ status: 'ok' | 'error'; record: string; values: string[] }> {
+    const record = `${this.recordPrefix}.${normalizeHostname(hostname)}`;
+    const answer = await this.resolver.resolve(record, 'TXT', options);
+    if (answer.status === 'error') return { status: 'error', record, values: [] };
+    return { status: 'ok', record, values: answer.values.filter((v) => this.isChallengeValue(v)) };
+  }
+
   /** Look up the challenge record in public DNS. */
   async verifyChallenge(
     input: { hostname: string; tenantId: string } & RequestOptions,

@@ -98,13 +98,14 @@ Helpers: `nameserverInstructions(zone)`, `buildMarker`, `parseMarker`, `sameReco
 
 ## Ownership (`OwnershipModule`)
 
-| Method                                                              | Returns                                                                                              |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `createChallenge({ hostname, tenantId })`                           | `OwnershipChallenge`: `{ hostname, tenantId, record: { type: 'TXT', name, content }, instructions }` |
-| `verifyChallenge({ hostname, tenantId, signal? })`                  | `OwnershipVerificationResult` (`passed`, `pending`, `failed`, `error`)                               |
-| `token(hostname, tenantId)`                                         | Tenant-bound token                                                                                   |
-| `tenantTag(tenantId)`                                               | Opaque tag stored in DNS record comments                                                             |
-| `isChallengeValue(content)`, `matches(content, hostname, tenantId)` | Helpers                                                                                              |
+| Method                                                              | Returns                                                                                                |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `createChallenge({ hostname, tenantId })`                           | `OwnershipChallenge`: `{ hostname, tenantId, record: { type: 'TXT', name, content }, instructions }`   |
+| `verifyChallenge({ hostname, tenantId, signal? })`                  | `OwnershipVerificationResult` (`passed`, `pending`, `failed`, `error`)                                 |
+| `publishedChallenges(hostname, { signal? })`                        | `{ status: 'ok' \| 'error', record, values }`: challenge values for any tenant published in public DNS |
+| `token(hostname, tenantId)`                                         | Tenant-bound token                                                                                     |
+| `tenantTag(tenantId)`                                               | Opaque tag stored in DNS record comments                                                               |
+| `isChallengeValue(content)`, `matches(content, hostname, tenantId)` | Helpers                                                                                                |
 
 ## Verification
 

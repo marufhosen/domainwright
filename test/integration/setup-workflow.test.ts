@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { SetupCustomDomainInput, SetupWorkflowState } from '../../src/index.js';
+import type {
+  RegisteredDomain,
+  RegistrarAdapter,
+  SetupCustomDomainInput,
+  SetupWorkflowState,
+} from '../../src/index.js';
 import { createTestEnv, type TestEnv } from '../fakes/env.js';
 
 const mutating = (env: TestEnv): string[] =>
@@ -158,6 +163,40 @@ describe('setupCustomDomain: purchase', () => {
     expect(result.state.resources.registration).toBeUndefined();
   });
 
+  it('keeps the previous idempotency key when the checkpoint fails on resume (#1)', async () => {
+    const env = createTestEnv();
+    env.namecom.nextCreate = 'network';
+    const first = await env.client().workflows.setupCustomDomain(purchase);
+    expect(first.state.resources.registration).toMatchObject({ status: 'unknown' });
+    const originalKey = first.state.resources.registration!.idempotencyKey;
+
+    // Resume, but the pre-purchase checkpoint fails once.
+    let failed = false;
+    let persisted: SetupWorkflowState | undefined;
+    const second = await env.client().workflows.setupCustomDomain({
+      ...purchase,
+      resumeFrom: first.state,
+      onCheckpoint: (s) => {
+        if (!failed && s.resources.registration?.status === 'submitting') {
+          failed = true;
+          throw new Error('database down');
+        }
+        persisted = s;
+      },
+    });
+    expect(stepStatus(second).registration).toBe('failed');
+    expect(persisted?.resources.registration).toMatchObject({ status: 'unknown', idempotencyKey: originalKey });
+    expect(second.state.resources.registration?.idempotencyKey).toBe(originalKey);
+
+    // The next resume repeats the purchase with the original key only.
+    await env.client().workflows.setupCustomDomain({ ...purchase, resumeFrom: persisted! });
+    const keys = env.namecom.calls
+      .filter((c) => c.method === 'POST' && c.path === '/core/v1/domains')
+      .map((c) => c.headers['x-idempotency-key']);
+    expect(new Set(keys)).toEqual(new Set([originalKey]));
+    expect(env.namecom.orders).toBe(1);
+  });
+
   it('stops on a payment failure without touching Cloudflare', async () => {
     const env = createTestEnv();
     env.namecom.nextCreate = 'payment';
@@ -165,6 +204,94 @@ describe('setupCustomDomain: purchase', () => {
     expect(result.errors[0]).toMatchObject({ code: 'PAYMENT_FAILED' });
     expect(result.lifecycle).toBe('failed');
     expect(env.cf.zones).toHaveLength(0);
+  });
+
+  it('records pending registrations as pending and never resubmits them (#2)', async () => {
+    const env = createTestEnv();
+    let registerCalls = 0;
+    let registered: RegisteredDomain | null = null;
+    let nextStatus: 'pending' | 'action-required' = 'pending';
+    const adapter: RegistrarAdapter = {
+      id: 'slow',
+      displayName: 'Slow Registrar',
+      capabilities: {
+        checkAvailability: true,
+        suggestions: false,
+        pricing: true,
+        register: true,
+        idempotentRegistration: true,
+        renew: false,
+        getDomain: true,
+        setNameservers: false,
+      },
+      checkAvailability: async (domains) =>
+        domains.map((domain) => ({
+          domain,
+          tld: 'com',
+          availability: 'available',
+          confirmed: true,
+          premium: false,
+          registrar: 'slow',
+        })),
+      getPricing: async (domain, years) => ({
+        domain,
+        years,
+        premium: false,
+        registrationPrice: { amount: 10, currency: 'USD' },
+        renewalPrice: null,
+        transferPrice: null,
+      }),
+      register: async (request) => {
+        registerCalls += 1;
+        return { domain: request.domain, status: nextStatus, replayed: false, registrar: 'slow' };
+      },
+      getDomain: async () => registered,
+    };
+    const client = env.client({ registrar: adapter });
+    const input: SetupCustomDomainInput = {
+      domain: 'slow-registry.com',
+      worker: { name: 'app' },
+      registration: { purchase: true, maxPrice: 15 },
+    };
+
+    const first = await client.workflows.setupCustomDomain(input);
+    expect(stepStatus(first).registration).toBe('waiting');
+    expect(first.state.resources.registration?.status).toBe('pending');
+    expect(first.lifecycle).toBe('registering');
+
+    // Still pending at the registrar: waiting again, no second order.
+    const second = await client.workflows.setupCustomDomain({ ...input, resumeFrom: first.state });
+    expect(stepStatus(second).registration).toBe('waiting');
+    expect(second.state.resources.registration?.status).toBe('pending');
+    expect(registerCalls).toBe(1);
+
+    // Completed at the registrar: the resumed step succeeds without ordering again.
+    registered = {
+      domain: 'slow-registry.com',
+      registrar: 'slow',
+      createdAt: null,
+      expiresAt: '2027-10-19T00:00:00Z',
+      autoRenew: null,
+      locked: null,
+      privacy: null,
+      nameservers: [],
+    };
+    const third = await client.workflows.setupCustomDomain({ ...input, resumeFrom: second.state });
+    expect(stepStatus(third).registration).toBe('succeeded');
+    expect(third.state.resources.registration).toMatchObject({
+      status: 'registered',
+      expiresAt: '2027-10-19T00:00:00Z',
+    });
+    expect(registerCalls).toBe(1);
+
+    // action-required asks for a manual step instead of waiting silently.
+    registered = null;
+    nextStatus = 'action-required';
+    const other = await client.workflows.setupCustomDomain({ ...input, domain: 'needs-docs.com' });
+    expect(other.state.resources.registration?.status).toBe('action-required');
+    expect(other.steps.find((s) => s.id === 'registration')?.actions).toEqual([
+      expect.objectContaining({ type: 'manual' }),
+    ]);
   });
 });
 
