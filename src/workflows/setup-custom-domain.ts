@@ -266,7 +266,16 @@ class SetupRun {
       submittedAt: existing?.submittedAt ?? now(),
     };
     // Persist the key before money can move. If this fails, do not purchase.
-    await this.checkpoint(true);
+    try {
+      await this.checkpoint(true);
+    } catch (error) {
+      // Restore what the previous run recorded: its key may already have been sent to the
+      // registrar, and dropping it would let a later resume buy again under a new key. A key
+      // generated in this run was never sent, so it is safe to discard.
+      if (existing) this.state.resources.registration = existing;
+      else delete this.state.resources.registration;
+      throw error;
+    }
 
     try {
       const result = await this.deps.registration!.purchase({
@@ -888,10 +897,8 @@ class SetupRun {
           details: { beforePurchase },
         },
       );
-      if (beforePurchase) {
-        delete this.state.resources.registration;
-        throw this.checkpointError;
-      }
+      // Before a purchase the caller decides what registration state to keep.
+      if (beforePurchase) throw this.checkpointError;
       throw new StopWorkflow();
     }
   }
