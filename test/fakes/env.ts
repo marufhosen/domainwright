@@ -4,7 +4,7 @@
  * No test touches the real network.
  */
 
-import { DomainPilot, type DomainPilotConfig } from '../../src/index.js';
+import { Domainwright, type DomainwrightConfig } from '../../src/index.js';
 import { FakeCloudflare } from './cloudflare.js';
 import { FakeNameCom } from './namecom.js';
 
@@ -49,7 +49,7 @@ export interface TestEnv {
   sites: Map<string, () => Response>;
   fetch: typeof fetch;
   requests: string[];
-  client(overrides?: Partial<DomainPilotConfig>): DomainPilot;
+  client(overrides?: Partial<DomainwrightConfig>): Domainwright;
 }
 
 export function createTestEnv(): TestEnv {
@@ -79,7 +79,7 @@ export function createTestEnv(): TestEnv {
     fetch: fetchImpl,
     requests,
     client(overrides = {}) {
-      return new DomainPilot({
+      return new Domainwright({
         cloudflare: { apiToken: cf.token, accountId: ACCOUNT_ID },
         registrar: { provider: 'namecom', username: namecom.username, apiToken: namecom.token, environment: 'sandbox' },
         ownership: { secret: OWNERSHIP_SECRET },

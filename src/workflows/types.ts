@@ -19,7 +19,7 @@ export type SetupStepId =
  * - `pending`: not started.
  * - `succeeded`: completed (resources exist or were confirmed).
  * - `skipped`: not applicable to this request.
- * - `waiting`: done as far as DomainPilot can go; waiting on propagation or an outstanding action.
+ * - `waiting`: done as far as Domainwright can go; waiting on propagation or an outstanding action.
  * - `failed`: stopped with an error (see `error.retryable`).
  * - `planned`: dry run; the listed changes would be made.
  */
@@ -99,7 +99,7 @@ export interface SetupCustomDomainInput extends RequestOptions {
   domain: string;
   /** Tenant the domain belongs to. Enables tenant-bound ownership markers and challenges. */
   tenantId?: string;
-  /** Worker that must serve the domain. DomainPilot never deploys or modifies Worker code. */
+  /** Worker that must serve the domain. Domainwright never deploys or modifies Worker code. */
   worker: WorkerTarget;
   /** Routing strategy. Default `{ strategy: 'custom-domain' }`. */
   routing?: RoutingSpec;
@@ -109,7 +109,7 @@ export interface SetupCustomDomainInput extends RequestOptions {
     records?: DnsRecordInput[];
     /**
      * Delete conflicting A/AAAA/CNAME records at the hostnames when they carry this tenant's
-     * DomainPilot marker. Unmanaged records are never deleted. Default false.
+     * Domainwright marker. Unmanaged records are never deleted. Default false.
      */
     replaceManagedRecords?: boolean;
   };
@@ -140,7 +140,7 @@ export interface SetupCustomDomainInput extends RequestOptions {
   };
   nameservers?: {
     /**
-     * Authorize DomainPilot to set the Cloudflare nameservers at the registrar when the domain is
+     * Authorize Domainwright to set the Cloudflare nameservers at the registrar when the domain is
      * in the configured registrar account. Default false: instructions are returned instead.
      */
     updateAtRegistrar?: boolean;
@@ -192,7 +192,7 @@ export interface RemoveCustomDomainInput extends RequestOptions {
   routing?: RoutingSpec;
   dns?: HostnameSelection;
   zone?: { name?: string };
-  /** Also delete the zone when it contains only DomainPilot-managed records. Default false. */
+  /** Also delete the zone when it contains only Domainwright-managed records. Default false. */
   deleteZone?: boolean;
   /** Required unless `dryRun` is set. */
   confirm?: boolean;

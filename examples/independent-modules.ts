@@ -2,9 +2,9 @@
  * Each module works without the workflows.
  *
  *   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... NAMECOM_USERNAME=acme-test NAMECOM_API_TOKEN=... \
- *   DOMAINPILOT_OWNERSHIP_SECRET=... npx tsx examples/independent-modules.ts
+ *   DOMAINWRIGHT_OWNERSHIP_SECRET=... npx tsx examples/independent-modules.ts
  */
-import { DomainPilot, isDomainPilotError } from '../src/index.js';
+import { Domainwright, isDomainwrightError } from '../src/index.js';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -12,7 +12,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-const client = new DomainPilot({
+const client = new Domainwright({
   cloudflare: { apiToken: requireEnv('CLOUDFLARE_API_TOKEN'), accountId: requireEnv('CLOUDFLARE_ACCOUNT_ID') },
   registrar: {
     provider: 'namecom',
@@ -20,7 +20,7 @@ const client = new DomainPilot({
     apiToken: requireEnv('NAMECOM_API_TOKEN'),
     environment: 'sandbox',
   },
-  ownership: { secret: requireEnv('DOMAINPILOT_OWNERSHIP_SECRET') },
+  ownership: { secret: requireEnv('DOMAINWRIGHT_OWNERSHIP_SECRET') },
 });
 
 async function main(): Promise<void> {
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  if (isDomainPilotError(error)) console.error(error.code, error.message);
+  if (isDomainwrightError(error)) console.error(error.code, error.message);
   else console.error(error);
   process.exitCode = 1;
 });

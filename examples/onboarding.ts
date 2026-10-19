@@ -2,18 +2,18 @@
  * Onboard a tenant domain that the tenant already owns: preview, then apply, then persist the
  * state so a later run can resume. No domain is purchased (no `registration` block).
  *
- *   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... DOMAINPILOT_OWNERSHIP_SECRET=... \
+ *   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... DOMAINWRIGHT_OWNERSHIP_SECRET=... \
  *   npx tsx examples/onboarding.ts marketplace-a.com tenant_123
  */
 import { readFile, writeFile } from 'node:fs/promises';
-import { DomainPilot, type SetupCustomDomainInput, type SetupWorkflowState } from '../src/index.js';
+import { Domainwright, type SetupCustomDomainInput, type SetupWorkflowState } from '../src/index.js';
 
 const [domain = 'marketplace-a.com', tenantId = 'tenant_123'] = process.argv.slice(2);
-const stateFile = `.domainpilot-${domain}.json`;
+const stateFile = `.domainwright-${domain}.json`;
 
-const client = new DomainPilot({
+const client = new Domainwright({
   cloudflare: { apiToken: process.env.CLOUDFLARE_API_TOKEN ?? '', accountId: process.env.CLOUDFLARE_ACCOUNT_ID ?? '' },
-  ownership: { secret: process.env.DOMAINPILOT_OWNERSHIP_SECRET ?? '' },
+  ownership: { secret: process.env.DOMAINWRIGHT_OWNERSHIP_SECRET ?? '' },
 });
 
 async function loadState(): Promise<SetupWorkflowState | undefined> {
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
     tenantId,
     worker: { name: 'property-source', environment: 'production' },
     dns: { root: true, www: true },
-    verification: { https: { path: '/.well-known/domainpilot-health', status: [200] } },
+    verification: { https: { path: '/.well-known/domainwright-health', status: [200] } },
     resumeFrom: await loadState(),
     onCheckpoint: (state) => writeFile(stateFile, JSON.stringify(state, null, 2)),
   };

@@ -1,10 +1,10 @@
 # Multi-tenant integration
 
-DomainPilot handles provider operations. Your application keeps the tenant-to-domain mapping, enforces who may manage which tenant, and persists the state DomainPilot returns. DomainPilot never needs access to your database, and it never trusts a tenant-to-domain association it has not verified.
+Domainwright handles provider operations. Your application keeps the tenant-to-domain mapping, enforces who may manage which tenant, and persists the state Domainwright returns. Domainwright never needs access to your database, and it never trusts a tenant-to-domain association it has not verified.
 
 ## Responsibilities
 
-| Your application                                                       | DomainPilot                                                |
+| Your application                                                       | Domainwright                                               |
 | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
 | Authenticate users and authorize "tenant X may connect domain Y"       | Provider calls with your credentials                       |
 | Store `{ tenantId, domain, workerTarget, strategy, state, lifecycle }` | Return that state and lifecycle on every call              |
@@ -15,13 +15,13 @@ DomainPilot handles provider operations. Your application keeps the tenant-to-do
 ## How cross-tenant takeover is prevented
 
 1. **Tenant-bound tokens.** With `ownership.secret` configured and `tenantId` passed, the token is `HMAC(secret, tenantId + hostname)`. A record published for tenant A never verifies tenant B.
-2. **Markers in managed zones.** For zone strategies, onboarding writes the tenant's token at `_domainpilot.<domain>`. A later attempt by another tenant finds a marker that does not match and stops with `TENANT_CONFLICT` before any change. A zone that already existed without a marker requires `zone.adoptExisting: true`, which your application should only pass after its own checks.
+2. **Markers in managed zones.** For zone strategies, onboarding writes the tenant's token at `_domainwright.<domain>`. A later attempt by another tenant finds a marker that does not match and stops with `TENANT_CONFLICT` before any change. A zone that already existed without a marker requires `zone.adoptExisting: true`, which your application should only pass after its own checks.
 3. **Ownership before routing for SaaS.** For Cloudflare for SaaS, custom hostnames are created only after the tenant's TXT challenge verifies, so a tenant cannot pre-register someone else's hostname on your SaaS zone.
 4. **No silent re-pointing.** Attaching a hostname that already serves a different Worker, or re-pointing a route, fails with `TENANT_CONFLICT` unless reassignment is authorized.
-5. **Tagged records.** DNS records DomainPilot creates carry an opaque tenant tag in their comment. Removal only deletes records with the requesting tenant's tag.
+5. **Tagged records.** DNS records Domainwright creates carry an opaque tenant tag in their comment. Removal only deletes records with the requesting tenant's tag.
 6. **Zone activation.** A zone becomes active only when the domain's registrar points at its nameservers, which only the real domain holder can do.
 
-DomainPilot cannot know your authorization rules. Always check that the signed-in user may act for `tenantId` before calling it.
+Domainwright cannot know your authorization rules. Always check that the signed-in user may act for `tenantId` before calling it.
 
 ## Per-tenant Workers vs. one shared Worker
 
@@ -42,7 +42,7 @@ DomainPilot cannot know your authorization rules. Always check that the signed-i
 ```sql
 create table tenant_domains (
   tenant_id    text not null,
-  domain       text not null unique,      -- normalized by DomainPilot (lowercase, punycode)
+  domain       text not null unique,      -- normalized by Domainwright (lowercase, punycode)
   strategy     text not null,
   worker       text not null,
   lifecycle    text not null,             -- pending | registering | configuring | verifying | active | failed | disabled
@@ -52,4 +52,4 @@ create table tenant_domains (
 );
 ```
 
-The unique constraint on `domain` is your first line of defence; DomainPilot's markers are the second.
+The unique constraint on `domain` is your first line of defence; Domainwright's markers are the second.

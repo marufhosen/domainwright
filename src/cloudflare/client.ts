@@ -1,4 +1,4 @@
-import { ConfigurationError, isDomainPilotError } from '../core/errors.js';
+import { ConfigurationError, isDomainwrightError } from '../core/errors.js';
 import { HttpClient, type HttpOptions } from '../core/http.js';
 import { type Logger, createSafeLogger } from '../core/logger.js';
 import type { RequestOptions } from '../core/types.js';
@@ -46,7 +46,7 @@ export function validateCloudflareConfig(config: CloudflareConfig): void {
 
 /**
  * Standalone Cloudflare client. Usable on its own (`import { CloudflareClient } from
- * '<package>/cloudflare'`) or through `DomainPilot#cloudflare`.
+ * '<package>/cloudflare'`) or through `Domainwright#cloudflare`.
  * Construction performs no network calls.
  */
 export class CloudflareClient {
@@ -92,7 +92,7 @@ export class CloudflareClient {
       result = await attempt('/user/tokens/verify');
     } catch (error) {
       if (
-        !isDomainPilotError(error) ||
+        !isDomainwrightError(error) ||
         !['AUTHENTICATION_FAILED', 'PERMISSION_DENIED', 'NOT_FOUND'].includes(error.code)
       ) {
         throw error;
@@ -104,7 +104,7 @@ export class CloudflareClient {
   }
 
   /**
-   * Probe read access for the modules DomainPilot uses. Cloudflare does not expose a
+   * Probe read access for the modules Domainwright uses. Cloudflare does not expose a
    * token's permission list to the token itself, so write permissions are confirmed
    * only when an operation runs; this reports read access and token validity.
    */
@@ -116,7 +116,7 @@ export class CloudflareClient {
         checks.push({ check, ok: true });
         return true;
       } catch (error) {
-        if (!isDomainPilotError(error)) throw error;
+        if (!isDomainwrightError(error)) throw error;
         checks.push({ check, ok: false, code: error.code, message: error.message });
         return false;
       }

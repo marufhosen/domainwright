@@ -2,7 +2,7 @@
 
 ## Error classes
 
-Every error is a `DomainPilotError` with a stable `code`, `retryable`, optional `provider`, `status`, `providerErrors` (provider code and message only) and non-sensitive `details`. Subclasses help with `instanceof` checks:
+Every error is a `DomainwrightError` with a stable `code`, `retryable`, optional `provider`, `status`, `providerErrors` (provider code and message only) and non-sensitive `details`. Subclasses help with `instanceof` checks:
 
 | Class                       | Codes                                                                                                                                                 |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -13,16 +13,16 @@ Every error is a `DomainPilotError` with a stable `code`, `retryable`, optional 
 | `TenantConflictError`       | `TENANT_CONFLICT`                                                                                                                                     |
 | `ConfirmationRequiredError` | `CONFIRMATION_REQUIRED`                                                                                                                               |
 | `UnsupportedOperationError` | `UNSUPPORTED_OPERATION`                                                                                                                               |
-| `DomainPilotError`          | `TIMEOUT`, `NETWORK_ERROR`, `ABORTED`, `WORKFLOW_STATE_MISMATCH`                                                                                      |
+| `DomainwrightError`         | `TIMEOUT`, `NETWORK_ERROR`, `ABORTED`, `WORKFLOW_STATE_MISMATCH`                                                                                      |
 
 ```ts
-import { isDomainPilotError, PurchaseError } from '@your-scope/domainpilot';
+import { isDomainwrightError, PurchaseError } from 'domainwright';
 
 try {
   await client.domains.purchase({ domain, maxPrice: 20 });
 } catch (error) {
   if (error instanceof PurchaseError && error.code === 'PURCHASE_NOT_AUTHORIZED') showPriceTooHigh(error.details);
-  else if (isDomainPilotError(error, 'RATE_LIMITED')) retryLater();
+  else if (isDomainwrightError(error, 'RATE_LIMITED')) retryLater();
   else throw error;
 }
 ```
@@ -42,8 +42,8 @@ The HTTP layer retries transient failures with exponential backoff and jitter (d
 - `Retry-After` and `X-RateLimit-Reset` headers are honoured (capped at `maxDelayMs`).
 
 ```ts
-new DomainPilot({ ..., http: { timeoutMs: 15_000, retry: { maxAttempts: 5, initialDelayMs: 250, maxDelayMs: 10_000 } } });
-new DomainPilot({ ..., http: { retry: false } }); // disable
+new Domainwright({ ..., http: { timeoutMs: 15_000, retry: { maxAttempts: 5, initialDelayMs: 250, maxDelayMs: 10_000 } } });
+new Domainwright({ ..., http: { retry: false } }); // disable
 ```
 
 Every operation accepts `signal` for cancellation; a cancelled operation throws `ABORTED`.
@@ -67,7 +67,7 @@ For `PURCHASE_OUTCOME_UNKNOWN`, `error.details.idempotencyKey` holds the key tha
 const owned = await client.domains.getRegistration(domain);
 
 // 2. Or repeat with the same key; within an hour name.com replays the original result instead of charging again,
-//    and DomainPilot short-circuits to 'already-owned' when the domain is already in the account.
+//    and Domainwright short-circuits to 'already-owned' when the domain is already in the account.
 await client.domains.purchase({ domain, maxPrice: 20, idempotencyKey: error.details.idempotencyKey as string });
 ```
 

@@ -1,6 +1,6 @@
 # Examples
 
-These files are type-checked with the rest of the repository (`npm run typecheck`). They import from `../src/index.js`; in your application import from your package name instead, for example `@your-scope/domainpilot`.
+These files are type-checked with the rest of the repository (`npm run typecheck`). They import from `../src/index.js`; in your application import from your package name instead, for example `domainwright`.
 
 | File                                             | Shows                                                                                      |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |

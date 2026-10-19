@@ -6,14 +6,14 @@
  * Use a dedicated account and a throwaway zone: the test creates and deletes a TXT record in it.
  */
 import { describe, expect, it } from 'vitest';
-import { DomainPilot } from '../../src/index.js';
+import { Domainwright } from '../../src/index.js';
 
 const apiToken = process.env.CLOUDFLARE_TEST_API_TOKEN;
 const accountId = process.env.CLOUDFLARE_TEST_ACCOUNT_ID;
 const zoneName = process.env.CLOUDFLARE_TEST_ZONE;
 
 describe.skipIf(!apiToken || !accountId || !zoneName)('Cloudflare test account', () => {
-  const client = (): DomainPilot => new DomainPilot({ cloudflare: { apiToken: apiToken!, accountId: accountId! } });
+  const client = (): Domainwright => new Domainwright({ cloudflare: { apiToken: apiToken!, accountId: accountId! } });
 
   it('verifies the token and read access', async () => {
     expect((await client().cloudflare.verifyToken()).active).toBe(true);
@@ -22,12 +22,12 @@ describe.skipIf(!apiToken || !accountId || !zoneName)('Cloudflare test account',
   });
 
   it('creates, reuses and deletes a managed TXT record', async () => {
-    const name = `_domainpilot-sandbox-${Date.now().toString(36)}`;
+    const name = `_domainwright-sandbox-${Date.now().toString(36)}`;
     const dns = client().cloudflare.dns;
-    const created = await dns.create({ domain: zoneName!, type: 'TXT', name, content: 'domainpilot sandbox test' });
+    const created = await dns.create({ domain: zoneName!, type: 'TXT', name, content: 'domainwright sandbox test' });
     try {
       expect(created.created).toBe(true);
-      const again = await dns.create({ domain: zoneName!, type: 'TXT', name, content: 'domainpilot sandbox test' });
+      const again = await dns.create({ domain: zoneName!, type: 'TXT', name, content: 'domainwright sandbox test' });
       expect(again.id).toBe(created.id);
     } finally {
       await dns.delete({ domain: zoneName!, recordId: created.id, confirm: true });

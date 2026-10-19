@@ -19,7 +19,7 @@ import type {
   SetupCustomDomainInput,
   SetupCustomDomainResult,
 } from '../workflows/types.js';
-import { type DomainPilotConfig, isRegistrarAdapter, validateConfig } from './config.js';
+import { type DomainwrightConfig, isRegistrarAdapter, validateConfig } from './config.js';
 import { ConfigurationError } from './errors.js';
 import { type FetchLike, HttpClient } from './http.js';
 import { type Logger, createSafeLogger } from './logger.js';
@@ -29,7 +29,7 @@ export interface WorkflowsModule {
   setupCustomDomain(input: SetupCustomDomainInput): Promise<SetupCustomDomainResult>;
   /** Inspect the current lifecycle state and checks without changing anything. */
   getStatus(input: VerifyDomainInput): Promise<DomainStatusResult>;
-  /** Disconnect a domain, removing only resources DomainPilot manages. */
+  /** Disconnect a domain, removing only resources Domainwright manages. */
   removeCustomDomain(input: RemoveCustomDomainInput): Promise<RemoveCustomDomainResult>;
 }
 
@@ -37,7 +37,7 @@ export interface WorkflowsModule {
  * Main entry point. Construction validates configuration but performs no network calls.
  * Modules whose provider is not configured throw `CONFIGURATION_ERROR` when used.
  */
-export class DomainPilot {
+export class Domainwright {
   readonly domains: DomainsModule;
   readonly workflows: WorkflowsModule;
   private readonly logger: Logger;
@@ -49,7 +49,7 @@ export class DomainPilot {
   private readonly probeFetch: FetchLike;
   private verifierInstance: DomainVerifier | undefined;
 
-  constructor(config: DomainPilotConfig) {
+  constructor(config: DomainwrightConfig) {
     validateConfig(config);
     this.logger = createSafeLogger(config.logger);
     this.http = new HttpClient(config.http, this.logger);

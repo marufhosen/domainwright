@@ -1,7 +1,7 @@
 // Core
-export { DomainPilot } from './core/client.js';
+export { Domainwright } from './core/client.js';
 export type { WorkflowsModule } from './core/client.js';
-export type { DomainPilotConfig } from './core/config.js';
+export type { DomainwrightConfig } from './core/config.js';
 export * from './core/errors.js';
 export { HttpClient } from './core/http.js';
 export type { FetchLike, HttpOptions } from './core/http.js';

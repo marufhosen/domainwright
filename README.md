@@ -1,16 +1,16 @@
-# DomainPilot
+# Domainwright
+
+[![npm](https://img.shields.io/npm/v/domainwright)](https://www.npmjs.com/package/domainwright) [![CI](https://github.com/marufhosen/domainwright/actions/workflows/ci.yml/badge.svg)](https://github.com/marufhosen/domainwright/actions/workflows/ci.yml) [![license](https://img.shields.io/npm/l/domainwright)](LICENSE)
 
 Custom-domain onboarding for multi-tenant SaaS applications on Cloudflare Workers.
 
-DomainPilot is a TypeScript SDK with independent modules for domain search and registration, Cloudflare zones, DNS, Worker routing, ownership verification and readiness checks, plus a resumable workflow that runs them in order and tells you exactly what is done, what is pending and what someone still has to do.
+Domainwright is a TypeScript SDK with independent modules for domain search and registration, Cloudflare zones, DNS, Worker routing, ownership verification and readiness checks, plus a resumable workflow that runs them in order and tells you exactly what is done, what is pending and what someone still has to do.
 
 - **Modular.** Buy a domain without touching DNS, configure DNS for a domain you already own, verify an existing setup, or run the full onboarding.
-- **Safe by default.** Purchases need an explicit price limit. Deletions, nameserver changes and reassignments need explicit confirmation. Records DomainPilot did not create are never changed.
+- **Safe by default.** Purchases need an explicit price limit. Deletions, nameserver changes and reassignments need explicit confirmation. Records Domainwright did not create are never changed.
 - **Honest status.** A successful API call is never reported as "ready". Every check (delegation, ownership, routing, certificate, public DNS, HTTPS) is reported separately.
 - **Tenant-aware, database-free.** Ownership tokens are derived from your secret, the tenant ID and the hostname, so one tenant can never claim another tenant's domain, and the SDK never needs your database.
 - **Runs on Node.js 20+ and Cloudflare Workers.** Zero runtime dependencies; only `fetch`, Web Crypto and `URL`.
-
-> Package name: the package is published under a placeholder scope, `@your-scope/domainpilot`. Change `name` in `package.json` before publishing (see [Releasing](CONTRIBUTING.md#releasing)).
 
 ## Contents
 
@@ -20,35 +20,35 @@ DomainPilot is a TypeScript SDK with independent modules for domain search and r
 - [Onboard a tenant domain end to end](#onboard-a-tenant-domain-end-to-end)
 - [Routing strategies](#routing-strategies)
 - [Lifecycle states](#lifecycle-states)
-- [What DomainPilot automates and what it does not](#what-domainpilot-automates-and-what-it-does-not)
+- [What Domainwright automates and what it does not](#what-domainwright-automates-and-what-it-does-not)
 - [Guides](#guides)
 
 ## Install
 
 ```sh
-npm install @your-scope/domainpilot
+npm install domainwright
 ```
 
 Entry points (all ESM, with TypeScript declarations):
 
-| Import                                       | Contents                                                                 |
-| -------------------------------------------- | ------------------------------------------------------------------------ |
-| `@your-scope/domainpilot`                    | Everything, including the `DomainPilot` client                           |
-| `@your-scope/domainpilot/cloudflare`         | `CloudflareClient` (zones, DNS, Workers, custom hostnames, certificates) |
-| `@your-scope/domainpilot/registrars`         | Registrar adapter interface and built-in adapters                        |
-| `@your-scope/domainpilot/registrars/namecom` | `NameComRegistrar`                                                       |
-| `@your-scope/domainpilot/verification`       | `DomainVerifier`, DNS-over-HTTPS resolver, `OwnershipModule`             |
-| `@your-scope/domainpilot/workflows`          | Workflow functions and their types                                       |
-| `@your-scope/domainpilot/errors`             | Error classes and codes                                                  |
+| Import                            | Contents                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `domainwright`                    | Everything, including the `Domainwright` client                          |
+| `domainwright/cloudflare`         | `CloudflareClient` (zones, DNS, Workers, custom hostnames, certificates) |
+| `domainwright/registrars`         | Registrar adapter interface and built-in adapters                        |
+| `domainwright/registrars/namecom` | `NameComRegistrar`                                                       |
+| `domainwright/verification`       | `DomainVerifier`, DNS-over-HTTPS resolver, `OwnershipModule`             |
+| `domainwright/workflows`          | Workflow functions and their types                                       |
+| `domainwright/errors`             | Error classes and codes                                                  |
 
 ## Configure
 
-All credentials come from your application. DomainPilot keeps them in memory only, never logs them and never includes them in errors or results. Creating a client makes no network calls.
+All credentials come from your application. Domainwright keeps them in memory only, never logs them and never includes them in errors or results. Creating a client makes no network calls.
 
 ```ts
-import { DomainPilot } from '@your-scope/domainpilot';
+import { Domainwright } from 'domainwright';
 
-const client = new DomainPilot({
+const client = new Domainwright({
   cloudflare: {
     apiToken: env.CLOUDFLARE_API_TOKEN,
     accountId: env.CLOUDFLARE_ACCOUNT_ID,
@@ -60,7 +60,7 @@ const client = new DomainPilot({
     environment: 'sandbox', // or 'production'; required, so live purchases are always deliberate
   },
   ownership: {
-    secret: env.DOMAINPILOT_OWNERSHIP_SECRET, // at least 32 characters, keep it stable
+    secret: env.DOMAINWRIGHT_OWNERSHIP_SECRET, // at least 32 characters, keep it stable
   },
 });
 ```
@@ -147,13 +147,13 @@ const next = await client.workflows.setupCustomDomain({
 });
 ```
 
-Resuming never repeats a completed purchase and never duplicates zones, records, custom domains or routes. Add `registration: { purchase: true, maxPrice: 20 }` to buy the domain first, `nameservers: { updateAtRegistrar: true }` to let DomainPilot point a domain in your registrar account at Cloudflare, and `dryRun: true` to see the plan without changing anything. See the [workflow guide](docs/workflows.md).
+Resuming never repeats a completed purchase and never duplicates zones, records, custom domains or routes. Add `registration: { purchase: true, maxPrice: 20 }` to buy the domain first, `nameservers: { updateAtRegistrar: true }` to let Domainwright point a domain in your registrar account at Cloudflare, and `dryRun: true` to see the plan without changing anything. See the [workflow guide](docs/workflows.md).
 
 ## Routing strategies
 
-DomainPilot never assumes a zone or a DNS record connects a Worker. Pick a strategy explicitly with `routing`:
+Domainwright never assumes a zone or a DNS record connects a Worker. Pick a strategy explicitly with `routing`:
 
-| Strategy                  | When to use                                                                                      | What DomainPilot configures                                                                                    |
+| Strategy                  | When to use                                                                                      | What Domainwright configures                                                                                   |
 | ------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `custom-domain` (default) | The tenant's zone (or the platform zone, for tenant subdomains) lives in your Cloudflare account | Workers Custom Domains; Cloudflare creates the DNS record and certificate                                      |
 | `route`                   | Same, but you need path-based routes or an existing origin                                       | A proxied DNS record (originless `AAAA 100::` if none exists) and a `hostname/*` Workers Route                 |
@@ -173,9 +173,9 @@ Details and trade-offs: [Routing strategies](docs/routing-strategies.md).
 | `failed`      | A permanent failure that needs a change (see `errors` and `outstandingActions`)              |
 | `disabled`    | Disconnected by `removeCustomDomain`                                                         |
 
-Your application stores the tenant-to-domain mapping and the workflow state; DomainPilot returns everything you need to persist. See [Verification and statuses](docs/verification.md) and [Multi-tenant integration](docs/multi-tenant.md).
+Your application stores the tenant-to-domain mapping and the workflow state; Domainwright returns everything you need to persist. See [Verification and statuses](docs/verification.md) and [Multi-tenant integration](docs/multi-tenant.md).
 
-## What DomainPilot automates and what it does not
+## What Domainwright automates and what it does not
 
 | Task                                           | Automated                                                                          | Needs                                                             |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -183,10 +183,10 @@ Your application stores the tenant-to-domain mapping and the workflow state; Dom
 | Purchase, renewal                              | Yes, with `maxPrice`                                                               | Registrar API, funded account                                     |
 | Nameserver change                              | Only for domains in your registrar account and only with `updateAtRegistrar: true` | Otherwise returns the nameservers and instructions for the tenant |
 | Zone creation, DNS records                     | Yes                                                                                | Cloudflare token with Zone and DNS edit                           |
-| Worker connection                              | Yes (Custom Domains, Routes, or SaaS custom hostnames)                             | An already deployed Worker; DomainPilot never deploys code        |
+| Worker connection                              | Yes (Custom Domains, Routes, or SaaS custom hostnames)                             | An already deployed Worker; Domainwright never deploys code       |
 | Tenant DNS at another provider                 | No                                                                                 | Returned as `add-dns-record` actions for the tenant               |
 | SaaS zone setup (fallback origin, `*/*` route) | No                                                                                 | One-time platform setup; verified and reported                    |
-| Certificates                                   | Issued by Cloudflare                                                               | DomainPilot waits for and reports status                          |
+| Certificates                                   | Issued by Cloudflare                                                               | Domainwright waits for and reports status                         |
 
 ## Guides
 
@@ -199,7 +199,7 @@ Your application stores the tenant-to-domain mapping and the workflow state; Dom
 - [Errors, retries and recovery](docs/errors.md)
 - [Removing a domain safely](docs/removal.md)
 - [Multi-tenant integration](docs/multi-tenant.md)
-- [Using DomainPilot with React and Next.js](docs/react-and-nextjs.md)
+- [Using Domainwright with React and Next.js](docs/react-and-nextjs.md)
 - [Next.js and Cloudflare Workers integration](docs/nextjs-cloudflare-workers.md)
 - [Registrars](docs/registrars.md)
 - [Runtime compatibility and limitations](docs/runtime-and-limitations.md)

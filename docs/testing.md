@@ -1,6 +1,6 @@
 # Testing
 
-DomainPilot has four test layers. Only the first two run by default, and none of the default tests touch a real provider.
+Domainwright has four test layers. Only the first two run by default, and none of the default tests touch a real provider.
 
 | Command                 | What it runs                                                                                        | Network                                   |
 | ----------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------- |
@@ -24,7 +24,7 @@ Sandbox tests are skipped unless their variables are set. Use dedicated test cre
 NAMECOM_SANDBOX_USERNAME=acme-test NAMECOM_SANDBOX_TOKEN=... npm run test:sandbox
 
 # also run the sandbox purchase test (uses sandbox test credit; sandbox domains cannot be deleted)
-DOMAINPILOT_SANDBOX_ALLOW_PURCHASE=1 NAMECOM_SANDBOX_USERNAME=acme-test NAMECOM_SANDBOX_TOKEN=... npm run test:sandbox
+DOMAINWRIGHT_SANDBOX_ALLOW_PURCHASE=1 NAMECOM_SANDBOX_USERNAME=acme-test NAMECOM_SANDBOX_TOKEN=... npm run test:sandbox
 
 # Cloudflare test account with a throwaway zone; creates and deletes one TXT record
 CLOUDFLARE_TEST_API_TOKEN=... CLOUDFLARE_TEST_ACCOUNT_ID=... CLOUDFLARE_TEST_ZONE=test.example.com npm run test:sandbox

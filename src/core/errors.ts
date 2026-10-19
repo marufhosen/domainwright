@@ -1,7 +1,7 @@
 /**
  * Error classes and machine-readable error codes.
  *
- * Every error thrown by DomainPilot is a `DomainPilotError` (or subclass) with a
+ * Every error thrown by Domainwright is a `DomainwrightError` (or subclass) with a
  * stable `code`. Error messages and `details` never contain credentials: request
  * headers are never attached, and provider payloads are reduced to their
  * documented `code`/`message` fields.
@@ -34,7 +34,7 @@ export interface ProviderErrorDetail {
   message: string;
 }
 
-export interface DomainPilotErrorOptions {
+export interface DomainwrightErrorOptions {
   /** Whether repeating the same call later may succeed. */
   retryable?: boolean;
   /** Provider that produced the error, e.g. `cloudflare` or `namecom`. */
@@ -48,7 +48,7 @@ export interface DomainPilotErrorOptions {
   cause?: unknown;
 }
 
-export class DomainPilotError extends Error {
+export class DomainwrightError extends Error {
   readonly code: ErrorCode;
   readonly retryable: boolean;
   readonly provider: string | undefined;
@@ -56,9 +56,9 @@ export class DomainPilotError extends Error {
   readonly providerErrors: ProviderErrorDetail[];
   readonly details: Record<string, unknown>;
 
-  constructor(code: ErrorCode, message: string, options: DomainPilotErrorOptions = {}) {
+  constructor(code: ErrorCode, message: string, options: DomainwrightErrorOptions = {}) {
     super(message, options.cause === undefined ? undefined : { cause: options.cause });
-    this.name = 'DomainPilotError';
+    this.name = 'DomainwrightError';
     this.code = code;
     this.retryable = options.retryable ?? false;
     this.provider = options.provider;
@@ -94,7 +94,7 @@ export interface SerializedError {
 }
 
 /** Invalid input supplied by the caller. Never retryable. */
-export class ValidationError extends DomainPilotError {
+export class ValidationError extends DomainwrightError {
   constructor(message: string, details?: Record<string, unknown>) {
     super('VALIDATION_ERROR', message, details ? { details } : {});
     this.name = 'ValidationError';
@@ -102,7 +102,7 @@ export class ValidationError extends DomainPilotError {
 }
 
 /** Missing or inconsistent SDK configuration. */
-export class ConfigurationError extends DomainPilotError {
+export class ConfigurationError extends DomainwrightError {
   constructor(message: string, details?: Record<string, unknown>) {
     super('CONFIGURATION_ERROR', message, details ? { details } : {});
     this.name = 'ConfigurationError';
@@ -110,15 +110,15 @@ export class ConfigurationError extends DomainPilotError {
 }
 
 /** An error returned by, or while talking to, an external provider. */
-export class ProviderError extends DomainPilotError {
-  constructor(code: ErrorCode, message: string, options: DomainPilotErrorOptions = {}) {
+export class ProviderError extends DomainwrightError {
+  constructor(code: ErrorCode, message: string, options: DomainwrightErrorOptions = {}) {
     super(code, message, options);
     this.name = 'ProviderError';
   }
 }
 
 /** The requested operation is not supported by the configured provider. */
-export class UnsupportedOperationError extends DomainPilotError {
+export class UnsupportedOperationError extends DomainwrightError {
   constructor(message: string, details?: Record<string, unknown>) {
     super('UNSUPPORTED_OPERATION', message, details ? { details } : {});
     this.name = 'UnsupportedOperationError';
@@ -126,7 +126,7 @@ export class UnsupportedOperationError extends DomainPilotError {
 }
 
 /** A destructive or billable operation was attempted without explicit confirmation. */
-export class ConfirmationRequiredError extends DomainPilotError {
+export class ConfirmationRequiredError extends DomainwrightError {
   constructor(message: string, details?: Record<string, unknown>) {
     super('CONFIRMATION_REQUIRED', message, details ? { details } : {});
     this.name = 'ConfirmationRequiredError';
@@ -134,7 +134,7 @@ export class ConfirmationRequiredError extends DomainPilotError {
 }
 
 /** A resource is bound to a different tenant or Worker than the caller expects. */
-export class TenantConflictError extends DomainPilotError {
+export class TenantConflictError extends DomainwrightError {
   constructor(message: string, details?: Record<string, unknown>) {
     super('TENANT_CONFLICT', message, details ? { details } : {});
     this.name = 'TenantConflictError';
@@ -142,7 +142,7 @@ export class TenantConflictError extends DomainPilotError {
 }
 
 /** Purchase-related failures (not authorized, payment failed, unknown outcome, ...). */
-export class PurchaseError extends DomainPilotError {
+export class PurchaseError extends DomainwrightError {
   constructor(
     code: Extract<
       ErrorCode,
@@ -153,20 +153,20 @@ export class PurchaseError extends DomainPilotError {
       | 'DOMAIN_UNAVAILABLE'
     >,
     message: string,
-    options: DomainPilotErrorOptions = {},
+    options: DomainwrightErrorOptions = {},
   ) {
     super(code, message, options);
     this.name = 'PurchaseError';
   }
 }
 
-export function isDomainPilotError(error: unknown, code?: ErrorCode): error is DomainPilotError {
-  return error instanceof DomainPilotError && (code === undefined || error.code === code);
+export function isDomainwrightError(error: unknown, code?: ErrorCode): error is DomainwrightError {
+  return error instanceof DomainwrightError && (code === undefined || error.code === code);
 }
 
 /** Convert any thrown value into a JSON-safe error record without leaking unknown payloads. */
 export function serializeError(error: unknown): SerializedError {
-  if (error instanceof DomainPilotError) return error.toJSON();
+  if (error instanceof DomainwrightError) return error.toJSON();
   if (error instanceof Error) {
     return { name: error.name, code: 'PROVIDER_ERROR', message: error.message, retryable: false };
   }

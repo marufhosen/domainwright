@@ -14,5 +14,5 @@ Security fixes are released for the latest minor version.
 - Log fields pass through redaction before they reach any logger.
 - Purchases require an explicit spending limit and are never retried automatically.
 - Destructive operations (deleting records, zones, routes or custom domains, changing nameservers) require explicit confirmation.
-- DomainPilot only removes resources it created and tagged for the requesting tenant.
+- Domainwright only removes resources it created and tagged for the requesting tenant.
 - The package has no runtime dependencies.

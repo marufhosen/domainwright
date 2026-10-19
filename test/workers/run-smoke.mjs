@@ -17,14 +17,14 @@ try {
     idn: 'xn--bcher-kva.de',
     zoneId: 'b'.repeat(32),
     created: true,
-    challengeName: '_domainpilot.example.com',
+    challengeName: '_domainwright.example.com',
     verification: 'pending',
   };
   for (const [key, value] of Object.entries(expected)) {
     if (body[key] !== value)
       throw new Error(`Workers smoke test: ${key} = ${JSON.stringify(body[key])}, expected ${JSON.stringify(value)}`);
   }
-  if (body.challengeLength !== 'domainpilot-verification='.length + 32) throw new Error('unexpected challenge length');
+  if (body.challengeLength !== 'domainwright-verification='.length + 32) throw new Error('unexpected challenge length');
   console.log('Workers runtime smoke test passed', body);
 } finally {
   await mf.dispose();

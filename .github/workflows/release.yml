@@ -34,13 +34,6 @@ jobs:
             echo "Release tag ${GITHUB_REF_NAME} does not match package.json version ${version}" >&2
             exit 1
           fi
-      - name: Refuse to publish the placeholder package name
-        run: |
-          name="$(node -p "require('./package.json').name")"
-          if [ "${name}" = "@your-scope/domainpilot" ]; then
-            echo "Set the package name in package.json before publishing (CONTRIBUTING.md#releasing)" >&2
-            exit 1
-          fi
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint

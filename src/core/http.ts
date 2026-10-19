@@ -7,7 +7,7 @@
  * the server explicitly rejected them before processing (HTTP 429).
  */
 
-import { DomainPilotError } from './errors.js';
+import { DomainwrightError } from './errors.js';
 import type { Logger } from './logger.js';
 import { noopLogger } from './logger.js';
 import {
@@ -78,7 +78,7 @@ export class HttpClient {
     const globalFetch = (globalThis as { fetch?: FetchLike }).fetch;
     const impl = options.fetch ?? (globalFetch ? globalFetch.bind(globalThis) : undefined);
     if (!impl) {
-      throw new DomainPilotError('CONFIGURATION_ERROR', 'No fetch implementation available; pass http.fetch');
+      throw new DomainwrightError('CONFIGURATION_ERROR', 'No fetch implementation available; pass http.fetch');
     }
     this.fetchImpl = impl;
     this.timeoutMs = options.timeoutMs ?? 30_000;
@@ -107,7 +107,7 @@ export class HttpClient {
       try {
         response = await this.fetchWithTimeout(url, { method: req.method, headers, body }, req);
       } catch (error) {
-        const failure = error instanceof DomainPilotError ? error : networkError(req, error);
+        const failure = error instanceof DomainwrightError ? error : networkError(req, error);
         // A timeout or connection failure on a non-idempotent request has an unknown
         // outcome: the server may have processed it. Never retry those.
         const canRetry = idempotent && failure.code !== 'ABORTED' && attempt < policy.maxAttempts;
@@ -169,7 +169,7 @@ export class HttpClient {
     } catch (error) {
       if (req.signal?.aborted) throw abortError(req.signal);
       if (timedOut) {
-        throw new DomainPilotError('TIMEOUT', `${req.provider} request timed out after ${timeoutMs} ms`, {
+        throw new DomainwrightError('TIMEOUT', `${req.provider} request timed out after ${timeoutMs} ms`, {
           provider: req.provider,
           retryable: true,
           details: { operation: req.operation },
@@ -184,8 +184,8 @@ export class HttpClient {
   }
 }
 
-function networkError(req: HttpRequest, cause: unknown): DomainPilotError {
-  return new DomainPilotError('NETWORK_ERROR', `Could not reach ${req.provider}`, {
+function networkError(req: HttpRequest, cause: unknown): DomainwrightError {
+  return new DomainwrightError('NETWORK_ERROR', `Could not reach ${req.provider}`, {
     provider: req.provider,
     retryable: true,
     details: { operation: req.operation },

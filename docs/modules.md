@@ -11,7 +11,7 @@ Every module works on its own. The workflows only compose them.
 - [Certificates](#certificates)
 - [Ownership challenges](#ownership-challenges)
 - [Verification](#verification)
-- [Using modules without the DomainPilot client](#using-modules-without-the-domainpilot-client)
+- [Using modules without the Domainwright client](#using-modules-without-the-domainwright-client)
 
 ## Domain search
 
@@ -156,11 +156,11 @@ await client.cloudflare.dns.delete({ domain: 'example.com', recordId, confirm: t
 - Defaults: `ttl: 1` (automatic), `proxied: false`.
 - An identical record is reused (`created: false`), or rejected with `onDuplicate: 'error'`.
 - CNAME conflicts (a CNAME next to any other record at the same name) are detected before the API call and thrown as `CONFLICT` with the conflicting records in `details.conflicts`.
-- Records created by DomainPilot carry a marker in their comment (`[domainpilot]` or `[domainpilot t=<tenant tag>]`). `update` and `delete` refuse records without the marker unless you pass `allowUnmanaged: true`, so existing customer records are never changed by accident.
+- Records created by Domainwright carry a marker in their comment (`[domainwright]` or `[domainwright t=<tenant tag>]`). `update` and `delete` refuse records without the marker unless you pass `allowUnmanaged: true`, so existing customer records are never changed by accident.
 
 ## Worker integration
 
-DomainPilot connects hostnames to Workers you have already deployed. It never deploys or modifies Worker code.
+Domainwright connects hostnames to Workers you have already deployed. It never deploys or modifies Worker code.
 
 ```ts
 // Workers Custom Domains: Cloudflare manages the DNS record and certificate.
@@ -211,7 +211,7 @@ cert.status; // raw Cloudflare status, e.g. 'pending_validation'
 
 ```ts
 const challenge = await client.ownership.createChallenge({ hostname: 'shop.tenant.com', tenantId: 'tenant_123' });
-challenge.record; // { type: 'TXT', name: '_domainpilot.shop.tenant.com', content: 'domainpilot-verification=...' }
+challenge.record; // { type: 'TXT', name: '_domainwright.shop.tenant.com', content: 'domainwright-verification=...' }
 challenge.instructions;
 
 const result = await client.ownership.verifyChallenge({ hostname: 'shop.tenant.com', tenantId: 'tenant_123' });
@@ -238,11 +238,11 @@ const report = await client.domains.verify({
 
 See [Verification and statuses](verification.md) for every check.
 
-## Using modules without the DomainPilot client
+## Using modules without the Domainwright client
 
 ```ts
-import { CloudflareClient } from '@your-scope/domainpilot/cloudflare';
-import { NameComRegistrar } from '@your-scope/domainpilot/registrars/namecom';
+import { CloudflareClient } from 'domainwright/cloudflare';
+import { NameComRegistrar } from 'domainwright/registrars/namecom';
 
 const cloudflare = new CloudflareClient({ apiToken: env.CLOUDFLARE_API_TOKEN, accountId: env.CLOUDFLARE_ACCOUNT_ID });
 await cloudflare.zones.create({ domain: 'example.com' });

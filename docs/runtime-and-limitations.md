@@ -25,10 +25,10 @@ Other runtimes with these Web APIs (Deno, Bun) should work but are not tested.
 ## Known limitations
 
 - **One registrar adapter (name.com).** Others can be added through `RegistrarAdapter`. Only standard and registry-premium registrations; no transfers, aftermarket or backorders.
-- **Nameserver automation only for domains in your registrar account.** Otherwise DomainPilot returns instructions.
+- **Nameserver automation only for domains in your registrar account.** Otherwise Domainwright returns instructions.
 - **No DNSSEC management.** Disable DNSSEC at the registrar before delegating; re-enable it with Cloudflare afterwards.
-- **Cloudflare for SaaS setup is not automated.** Fallback origin, the SaaS zone itself and the `*/*` Worker route are one-time platform configuration. DomainPilot verifies the route.
-- **Apex domains on SaaS custom hostnames** need CNAME flattening or ALIAS records at the tenant's DNS provider, or Cloudflare's apex proxying (an Enterprise feature). DomainPilot reports what it observes but cannot verify flattened apex records by name.
+- **Cloudflare for SaaS setup is not automated.** Fallback origin, the SaaS zone itself and the `*/*` Worker route are one-time platform configuration. Domainwright verifies the route.
+- **Apex domains on SaaS custom hostnames** need CNAME flattening or ALIAS records at the tenant's DNS provider, or Cloudflare's apex proxying (an Enterprise feature). Domainwright reports what it observes but cannot verify flattened apex records by name.
 - **Write permissions cannot be pre-checked.** `checkAccess` probes reads; a missing write permission appears as `PERMISSION_DENIED` when the operation runs.
 - **Public DNS caching.** Results depend on the resolver cache and record TTLs.
 - **Zone types.** Only `full` zones are used by the workflow. `partial` (CNAME setup) zones can be created with `zones.create({ type: 'partial' })` but are not orchestrated.

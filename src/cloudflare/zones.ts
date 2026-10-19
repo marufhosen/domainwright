@@ -1,4 +1,4 @@
-import { ConfirmationRequiredError, ProviderError, isDomainPilotError } from '../core/errors.js';
+import { ConfirmationRequiredError, ProviderError, isDomainwrightError } from '../core/errors.js';
 import type { RequestOptions } from '../core/types.js';
 import { type PollOptions, poll } from '../utils/polling.js';
 import { normalizeHostname } from '../utils/validation.js';
@@ -151,7 +151,7 @@ export class ZonesModule {
       });
       return withInstructions(mapZone(raw), true);
     } catch (error) {
-      if (isDomainPilotError(error, 'CONFLICT')) {
+      if (isDomainwrightError(error, 'CONFLICT')) {
         const raced = await this.find(name, input);
         if (raced) return withInstructions(raced, false);
       }

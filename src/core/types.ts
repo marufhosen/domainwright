@@ -3,7 +3,7 @@
  */
 
 /**
- * Lifecycle of a tenant domain as reported by DomainPilot.
+ * Lifecycle of a tenant domain as reported by Domainwright.
  *
  * - `pending`: nothing has been provisioned yet, or the workflow has not started.
  * - `registering`: a registrar purchase is in progress or awaiting registry completion.
@@ -44,7 +44,7 @@ export interface WorkerTarget {
   name: string;
   /**
    * Optional Wrangler environment. Wrangler deploys environment `env` of Worker `name` as a
-   * separate Worker named `name-env`, which is the service DomainPilot targets. Cloudflare's
+   * separate Worker named `name-env`, which is the service Domainwright targets. Cloudflare's
    * `environment` field on Workers Custom Domains is deprecated, so it is not sent.
    */
   environment?: string;
@@ -95,7 +95,7 @@ export interface CheckResult {
   action?: OutstandingAction;
 }
 
-/** Work that DomainPilot cannot (or was not authorized to) perform itself. */
+/** Work that Domainwright cannot (or was not authorized to) perform itself. */
 export type OutstandingAction =
   | {
       type: 'update-nameservers';

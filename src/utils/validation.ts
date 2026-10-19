@@ -6,7 +6,7 @@ const IPV4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]
 export interface HostnameOptions {
   /** Allow a leading `*.` label. Default false. */
   allowWildcard?: boolean;
-  /** Allow labels starting with `_` (e.g. `_dmarc`, `_domainpilot`). Default false. */
+  /** Allow labels starting with `_` (e.g. `_dmarc`, `_domainwright`). Default false. */
   allowUnderscore?: boolean;
   /** Field name used in error messages. */
   field?: string;

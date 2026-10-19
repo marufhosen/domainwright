@@ -8,7 +8,7 @@ import { certificateReadiness } from '../cloudflare/certificates.js';
 import { routeMatchesHostname } from '../cloudflare/workers.js';
 import type { Zone } from '../cloudflare/zones.js';
 import { nameserverInstructions } from '../cloudflare/zones.js';
-import { isDomainPilotError, serializeError } from '../core/errors.js';
+import { isDomainwrightError, serializeError } from '../core/errors.js';
 import type { FetchLike } from '../core/http.js';
 import type { CheckId, CheckResult, CheckStatus, OutstandingAction, RequestOptions } from '../core/types.js';
 import { resolveWorkerService } from '../core/types.js';
@@ -652,7 +652,7 @@ class CheckRun {
     try {
       outcome = await fn();
     } catch (error) {
-      if (isDomainPilotError(error, 'ABORTED')) throw error;
+      if (isDomainwrightError(error, 'ABORTED')) throw error;
       const serialized = serializeError(error);
       outcome = { status: 'error', required: !options.informational, message: serialized.message };
       this.errors.push({

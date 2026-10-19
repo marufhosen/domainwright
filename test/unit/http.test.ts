@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HttpClient, isDomainPilotError } from '../../src/index.js';
+import { HttpClient, isDomainwrightError } from '../../src/index.js';
 import { parseRetryAfter } from '../../src/utils/retry.js';
 
 const fast = { initialDelayMs: 1, maxDelayMs: 5, jitter: false };
@@ -93,7 +93,7 @@ describe('HttpClient retries', () => {
     const pending = http.request({ ...req, method: 'GET', signal: controller.signal });
     controller.abort();
     const error = await pending.catch((e: unknown) => e);
-    expect(isDomainPilotError(error, 'ABORTED')).toBe(true);
+    expect(isDomainwrightError(error, 'ABORTED')).toBe(true);
   });
 
   it('parses Retry-After and X-RateLimit-Reset', () => {

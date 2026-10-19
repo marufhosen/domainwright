@@ -1,6 +1,6 @@
 # Credentials and permissions
 
-DomainPilot never ships or stores credentials. Your application passes them to the client at construction time; they live in memory only. They are never logged (log fields are redacted), never placed in errors, and never returned in results or workflow state.
+Domainwright never ships or stores credentials. Your application passes them to the client at construction time; they live in memory only. They are never logged (log fields are redacted), never placed in errors, and never returned in results or workflow state.
 
 ## Which features need which credentials
 
@@ -47,22 +47,22 @@ Create API tokens at <https://www.name.com/account/settings/api>. name.com issue
 - Sandbox: `environment: 'sandbox'`, username with the `-test` suffix (for example `acme-test`), sandbox token. Requests go to `https://api.dev.name.com`; the sandbox account has test credit and nothing is charged.
 - Production: `environment: 'production'`, your normal username and production token. Requests go to `https://api.name.com` and purchases are charged to the account.
 
-DomainPilot refuses mismatched combinations (a `-test` username in production, or a plain username in the sandbox) so test credentials cannot reach production by accident. `environment` has no default for the same reason.
+Domainwright refuses mismatched combinations (a `-test` username in production, or a plain username in the sandbox) so test credentials cannot reach production by accident. `environment` has no default for the same reason.
 
 ## Ownership secret
 
-`ownership.secret` (32+ characters) keys the HMAC that derives tenant-bound verification tokens and the opaque tenant tags DomainPilot writes into DNS record comments. Generate it once (for example `openssl rand -base64 48`), store it in your secret manager, and keep it stable: rotating it invalidates published challenges and makes existing markers unrecognizable, which blocks reuse until you pass `zone.adoptExisting` or `reassign`.
+`ownership.secret` (32+ characters) keys the HMAC that derives tenant-bound verification tokens and the opaque tenant tags Domainwright writes into DNS record comments. Generate it once (for example `openssl rand -base64 48`), store it in your secret manager, and keep it stable: rotating it invalidates published challenges and makes existing markers unrecognizable, which blocks reuse until you pass `zone.adoptExisting` or `reassign`.
 
 ## Environment variables
 
-DomainPilot does not read environment variables itself; it is your application that maps them into the configuration. [`.env.example`](../.env.example) lists suggested names. On Cloudflare Workers, store secrets with `wrangler secret put` and read them from `env`; on Node.js, use your secret manager or `process.env`.
+Domainwright does not read environment variables itself; it is your application that maps them into the configuration. [`.env.example`](../.env.example) lists suggested names. On Cloudflare Workers, store secrets with `wrangler secret put` and read them from `env`; on Node.js, use your secret manager or `process.env`.
 
 ## Different credentials per environment
 
 Create one client per credential set:
 
 ```ts
-const sandboxClient = new DomainPilot({
+const sandboxClient = new Domainwright({
   cloudflare: { apiToken: env.CF_STAGING_TOKEN, accountId: env.CF_STAGING_ACCOUNT },
   registrar: {
     provider: 'namecom',
@@ -72,7 +72,7 @@ const sandboxClient = new DomainPilot({
   },
 });
 
-const productionClient = new DomainPilot({
+const productionClient = new Domainwright({
   cloudflare: { apiToken: env.CF_PROD_TOKEN, accountId: env.CF_PROD_ACCOUNT },
   registrar: {
     provider: 'namecom',

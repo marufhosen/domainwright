@@ -1,7 +1,8 @@
 {
-  "name": "@your-scope/domainpilot",
+  "name": "domainwright",
   "version": "0.1.0",
   "description": "Modular TypeScript SDK for custom-domain onboarding in multi-tenant SaaS apps on Cloudflare Workers: search, registration, zones, DNS, Worker routing, verification and resumable workflows.",
+  "author": "Maruf Hosen (https://github.com/marufhosen)",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -57,7 +58,13 @@
     "domain-registration",
     "multi-tenant",
     "saas",
-    "name.com"
+    "name.com",
+    "cloudflare-for-saas",
+    "custom-hostnames",
+    "workers-custom-domains",
+    "domains",
+    "nextjs",
+    "typescript"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
@@ -74,12 +81,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/domainpilot.git"
+    "url": "git+https://github.com/marufhosen/domainwright.git"
   },
   "bugs": {
-    "url": "https://github.com/your-org/domainpilot/issues"
+    "url": "https://github.com/marufhosen/domainwright/issues"
   },
-  "homepage": "https://github.com/your-org/domainpilot#readme",
+  "homepage": "https://github.com/marufhosen/domainwright#readme",
   "publishConfig": {
     "access": "public",
     "provenance": true

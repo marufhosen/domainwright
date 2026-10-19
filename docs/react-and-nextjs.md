@@ -1,12 +1,12 @@
-# Using DomainPilot with React and Next.js
+# Using Domainwright with React and Next.js
 
-DomainPilot is a **server-side** library. It holds your Cloudflare, registrar and ownership secrets, so it must never be imported into code that runs in the browser. The pattern for any JavaScript front end:
+Domainwright is a **server-side** library. It holds your Cloudflare, registrar and ownership secrets, so it must never be imported into code that runs in the browser. The pattern for any JavaScript front end:
 
 ```
-React UI (browser)  ──fetch──▶  your API (server)  ──▶  DomainPilot  ──▶  Cloudflare / registrar
+React UI (browser)  ──fetch──▶  your API (server)  ──▶  Domainwright  ──▶  Cloudflare / registrar
 ```
 
-| You use                                        | Where DomainPilot runs                                                                          |
+| You use                                        | Where Domainwright runs                                                                         |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Next.js (App Router)                           | Route handlers or server actions. This guide.                                                   |
 | Next.js on Cloudflare Workers (OpenNext)       | Same, with secrets from Worker bindings. See [the Workers guide](nextjs-cloudflare-workers.md). |
@@ -16,7 +16,7 @@ React UI (browser)  ──fetch──▶  your API (server)  ──▶  DomainPi
 ## 1. Install and configure
 
 ```sh
-npm install @your-scope/domainpilot
+npm install domainwright
 npm install server-only # optional: makes the build fail if the client is imported into browser code
 ```
 
@@ -24,7 +24,7 @@ npm install server-only # optional: makes the build fail if the client is import
 # .env.local (never prefix these with NEXT_PUBLIC_)
 CLOUDFLARE_API_TOKEN=...
 CLOUDFLARE_ACCOUNT_ID=...
-DOMAINPILOT_OWNERSHIP_SECRET=... # at least 32 characters; keep it stable
+DOMAINWRIGHT_OWNERSHIP_SECRET=... # at least 32 characters; keep it stable
 ```
 
 Create the client in one server-only module. Construction makes no network calls, so a module-level instance is fine on Node.js:
@@ -32,11 +32,11 @@ Create the client in one server-only module. Construction makes no network calls
 ```ts
 // lib/domains.ts
 import 'server-only';
-import { DomainPilot } from '@your-scope/domainpilot';
+import { Domainwright } from 'domainwright';
 
-export const domains = new DomainPilot({
+export const domains = new Domainwright({
   cloudflare: { apiToken: process.env.CLOUDFLARE_API_TOKEN!, accountId: process.env.CLOUDFLARE_ACCOUNT_ID! },
-  ownership: { secret: process.env.DOMAINPILOT_OWNERSHIP_SECRET! },
+  ownership: { secret: process.env.DOMAINWRIGHT_OWNERSHIP_SECRET! },
 });
 
 export const WORKER = { name: 'my-saas', environment: 'production' } as const;
@@ -49,7 +49,7 @@ Two endpoints are enough: one starts onboarding, the other resumes it and return
 ```ts
 // app/api/domains/route.ts
 import { NextResponse } from 'next/server';
-import { isDomainPilotError } from '@your-scope/domainpilot';
+import { isDomainwrightError } from 'domainwright';
 import { domains, WORKER } from '@/lib/domains';
 
 export async function POST(request: Request) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       actions: result.outstandingActions,
     });
   } catch (error) {
-    if (isDomainPilotError(error, 'VALIDATION_ERROR')) {
+    if (isDomainwrightError(error, 'VALIDATION_ERROR')) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     throw error;
@@ -115,7 +115,7 @@ The UI submits the domain, shows the outstanding actions and re-checks every 30 
 'use client'; // Next.js only; remove in a plain React app
 
 import { useEffect, useState } from 'react';
-import type { DomainLifecycleState, OutstandingAction } from '@your-scope/domainpilot'; // types only: nothing is bundled
+import type { DomainLifecycleState, OutstandingAction } from 'domainwright'; // types only: nothing is bundled
 
 interface DomainStatus {
   domain: string;
@@ -195,4 +195,4 @@ In a plain React app (Vite, CRA), use the same component without `'use client'`,
 - **Check on a schedule, not only from the browser.** DNS and certificates can take hours, and the tenant may close the tab. Resume pending domains from a cron job or queue as well. See [Re-check pending domains on a schedule](nextjs-cloudflare-workers.md#4-re-check-pending-domains-on-a-schedule).
 - **Map hostnames to tenants** in middleware, and only serve tenant content once the domain is `active`. See [Resolve the tenant from the hostname](nextjs-cloudflare-workers.md#5-resolve-the-tenant-from-the-hostname-in-your-app).
 - **Long requests.** The first `setupCustomDomain` call makes several provider calls. Keep `verification.waitForReady` off in request handlers, and check that your host's function timeout is generous enough.
-- **Authorization is yours.** DomainPilot keeps tenants apart through ownership markers, but your API must still check that the signed-in user may manage `tenantId`.
+- **Authorization is yours.** Domainwright keeps tenants apart through ownership markers, but your API must still check that the signed-in user may manage `tenantId`.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PurchaseError, UnsupportedOperationError, isDomainPilotError } from '../../src/index.js';
+import { PurchaseError, UnsupportedOperationError, isDomainwrightError } from '../../src/index.js';
 import type { RegistrarAdapter } from '../../src/index.js';
 import { createTestEnv } from '../fakes/env.js';
 
@@ -102,7 +102,7 @@ describe('domains.purchase', () => {
       .client()
       .domains.purchase({ domain: 'net.com', maxPrice: 15 })
       .catch((e: unknown) => e);
-    expect(isDomainPilotError(error, 'PURCHASE_OUTCOME_UNKNOWN')).toBe(true);
+    expect(isDomainwrightError(error, 'PURCHASE_OUTCOME_UNKNOWN')).toBe(true);
     expect(env.namecom.calls.filter((c) => c.path === '/core/v1/domains' && c.method === 'POST')).toHaveLength(1);
   });
 

@@ -25,7 +25,7 @@ export type CloudflareCertificateStatus =
   | 'backup_issued'
   | 'holding_deployment';
 
-/** DomainPilot's reduction of Cloudflare certificate states. */
+/** Domainwright's reduction of Cloudflare certificate states. */
 export type CertificateReadiness = 'active' | 'pending' | 'failed' | 'missing';
 
 const FAILED = new Set<string>([
