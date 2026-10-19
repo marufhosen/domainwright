@@ -5,9 +5,9 @@
  *   triggers = { crons = ["*\/10 * * * *"] }
  *   kv_namespaces = [{ binding = "TENANT_DOMAINS", id = "..." }]
  *
- * and store CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and DOMAINPILOT_OWNERSHIP_SECRET as secrets.
+ * and store CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and DOMAINWRIGHT_OWNERSHIP_SECRET as secrets.
  */
-import { DomainPilot, type DomainLifecycleState, type SetupWorkflowState } from '../src/index.js';
+import { Domainwright, type DomainLifecycleState, type SetupWorkflowState } from '../src/index.js';
 
 /** Minimal KV surface used here; use `KVNamespace` from @cloudflare/workers-types in a real Worker. */
 interface KvLike {
@@ -19,7 +19,7 @@ interface KvLike {
 interface Env {
   CLOUDFLARE_API_TOKEN: string;
   CLOUDFLARE_ACCOUNT_ID: string;
-  DOMAINPILOT_OWNERSHIP_SECRET: string;
+  DOMAINWRIGHT_OWNERSHIP_SECRET: string;
   TENANT_DOMAINS: KvLike;
 }
 
@@ -36,9 +36,9 @@ const BATCH_SIZE = 5;
 
 export default {
   async scheduled(_controller: unknown, env: Env): Promise<void> {
-    const client = new DomainPilot({
+    const client = new Domainwright({
       cloudflare: { apiToken: env.CLOUDFLARE_API_TOKEN, accountId: env.CLOUDFLARE_ACCOUNT_ID },
-      ownership: { secret: env.DOMAINPILOT_OWNERSHIP_SECRET },
+      ownership: { secret: env.DOMAINWRIGHT_OWNERSHIP_SECRET },
     });
 
     const { keys } = await env.TENANT_DOMAINS.list({ prefix: 'domain:' });

@@ -66,12 +66,12 @@ For SaaS apex hostnames, which cannot have a CNAME, `dns-records` also passes wh
 By default any HTTP status below 500 passes, which proves DNS, TLS and that _something_ answers. To prove the hostname reaches the right tenant's application, have your Worker expose a health route that echoes the tenant it resolved, and assert on it:
 
 ```ts
-https: { path: '/.well-known/domainpilot-health', status: [200], header: { name: 'x-tenant-id', value: tenantId } }
+https: { path: '/.well-known/domainwright-health', status: [200], header: { name: 'x-tenant-id', value: tenantId } }
 ```
 
 ## Why a successful API call is not "ready"
 
-Creating a zone, attaching a custom domain or creating a custom hostname succeeds immediately, but delegation, propagation and certificate issuance happen later and can fail. DomainPilot therefore reports those as separate checks, observed from public DNS and real HTTPS requests, and only `active` / `verified: true` means production-ready.
+Creating a zone, attaching a custom domain or creating a custom hostname succeeds immediately, but delegation, propagation and certificate issuance happen later and can fail. Domainwright therefore reports those as separate checks, observed from public DNS and real HTTPS requests, and only `active` / `verified: true` means production-ready.
 
 ## Caching
 

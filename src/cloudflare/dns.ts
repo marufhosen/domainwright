@@ -1,4 +1,4 @@
-import { ConfirmationRequiredError, DomainPilotError, ValidationError } from '../core/errors.js';
+import { ConfirmationRequiredError, DomainwrightError, ValidationError } from '../core/errors.js';
 import type { RequestOptions } from '../core/types.js';
 import { isIPv4, isIPv6, normalizeHostname, resolveRecordName } from '../utils/validation.js';
 import type { CloudflareApi } from './api.js';
@@ -26,7 +26,7 @@ export type DnsRecordType =
   | 'TLSA'
   | 'URI';
 
-/** Record types whose content is a single `content` string validated by DomainPilot. */
+/** Record types whose content is a single `content` string validated by Domainwright. */
 const CONTENT_TYPES = new Set<DnsRecordType>(['A', 'AAAA', 'CNAME', 'TXT', 'MX', 'NS', 'PTR', 'CAA', 'HTTPS', 'SVCB']);
 const PROXIABLE = new Set<DnsRecordType>(['A', 'AAAA', 'CNAME']);
 
@@ -42,7 +42,7 @@ export interface DnsRecord {
   proxiable: boolean;
   priority?: number;
   comment: string | null;
-  /** True when the record carries the DomainPilot management marker. */
+  /** True when the record carries the Domainwright management marker. */
   managed: boolean;
   /** Tenant tag from the management marker, when present. */
   tenantTag: string | null;
@@ -66,7 +66,7 @@ export interface DnsRecordInput {
   proxied?: boolean;
   /** Required for MX and URI records. */
   priority?: number;
-  /** Free-form note stored on the record. The DomainPilot marker is appended automatically. */
+  /** Free-form note stored on the record. The Domainwright marker is appended automatically. */
   comment?: string;
 }
 
@@ -74,8 +74,8 @@ export type CreateDnsRecordInput = ZoneRef &
   DnsRecordInput &
   RequestOptions & {
     /**
-     * Tag the record as managed by DomainPilot (default true). Managed records can be
-     * updated or removed by DomainPilot later; unmanaged records are never touched
+     * Tag the record as managed by Domainwright (default true). Managed records can be
+     * updated or removed by Domainwright later; unmanaged records are never touched
      * without `allowUnmanaged`.
      */
     managed?: boolean;
@@ -98,7 +98,7 @@ export type UpdateDnsRecordInput = ZoneRef &
   RequestOptions & {
     recordId: string;
     changes: Partial<Omit<DnsRecordInput, 'type'>>;
-    /** Allow changing a record that DomainPilot did not create. Default false. */
+    /** Allow changing a record that Domainwright did not create. Default false. */
     allowUnmanaged?: boolean;
   };
 
@@ -107,7 +107,7 @@ export type DeleteDnsRecordInput = ZoneRef &
     recordId: string;
     /** Required: deletion is destructive. */
     confirm: boolean;
-    /** Allow deleting a record that DomainPilot did not create. Default false. */
+    /** Allow deleting a record that Domainwright did not create. Default false. */
     allowUnmanaged?: boolean;
   };
 
@@ -125,10 +125,10 @@ interface RawRecord {
   data?: Record<string, unknown>;
 }
 
-const MARKER_RE = /\[domainpilot(?: t=([A-Za-z0-9_-]{1,32}))?\]/;
+const MARKER_RE = /\[domainwright(?: t=([A-Za-z0-9_-]{1,32}))?\]/;
 
 export function buildMarker(tenantTag?: string): string {
-  return tenantTag ? `[domainpilot t=${tenantTag}]` : '[domainpilot]';
+  return tenantTag ? `[domainwright t=${tenantTag}]` : '[domainwright]';
 }
 
 export function parseMarker(comment: string | null | undefined): { managed: boolean; tenantTag: string | null } {
@@ -294,7 +294,7 @@ export class DnsModule {
       content === undefined ? undefined : existing.find((r) => sameRecord(r, { type: input.type, name, content }));
     if (duplicate) {
       if (input.onDuplicate === 'error') {
-        throw new DomainPilotError('CONFLICT', `An identical ${input.type} record already exists for ${name}`, {
+        throw new DomainwrightError('CONFLICT', `An identical ${input.type} record already exists for ${name}`, {
           details: { recordId: duplicate.id },
         });
       }
@@ -304,7 +304,7 @@ export class DnsModule {
     // A CNAME cannot coexist with any other record at the same name (RFC 1034 section 3.6.2).
     const conflicts = input.type === 'CNAME' ? existing : existing.filter((r) => r.type === 'CNAME');
     if (conflicts.length > 0) {
-      throw new DomainPilotError('CONFLICT', `Conflicting DNS records exist for ${name}`, {
+      throw new DomainwrightError('CONFLICT', `Conflicting DNS records exist for ${name}`, {
         details: {
           name,
           conflicts: conflicts.map((r) => ({ id: r.id, type: r.type, content: r.content, managed: r.managed })),
@@ -340,7 +340,7 @@ export class DnsModule {
     const current = await this.get({ zoneId: zone.id, recordId: input.recordId, signal: input.signal });
     if (!current.managed && !input.allowUnmanaged) {
       throw new ConfirmationRequiredError(
-        `Record ${current.name} (${current.type}) was not created by DomainPilot; pass allowUnmanaged: true to modify it`,
+        `Record ${current.name} (${current.type}) was not created by Domainwright; pass allowUnmanaged: true to modify it`,
         { recordId: current.id },
       );
     }
@@ -388,7 +388,7 @@ export class DnsModule {
     const current = await this.get({ zoneId: zone.id, recordId: input.recordId, signal: input.signal });
     if (!current.managed && !input.allowUnmanaged) {
       throw new ConfirmationRequiredError(
-        `Record ${current.name} (${current.type}) was not created by DomainPilot; pass allowUnmanaged: true to delete it`,
+        `Record ${current.name} (${current.type}) was not created by Domainwright; pass allowUnmanaged: true to delete it`,
         { recordId: current.id },
       );
     }

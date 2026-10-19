@@ -37,7 +37,7 @@ describe('normalizeHostname', () => {
   it('handles wildcards and underscores only when allowed', () => {
     expect(() => normalizeHostname('*.example.com')).toThrow(ValidationError);
     expect(normalizeHostname('*.example.com', { allowWildcard: true })).toBe('*.example.com');
-    expect(normalizeHostname('_domainpilot.example.com', { allowUnderscore: true })).toBe('_domainpilot.example.com');
+    expect(normalizeHostname('_domainwright.example.com', { allowUnderscore: true })).toBe('_domainwright.example.com');
   });
 });
 

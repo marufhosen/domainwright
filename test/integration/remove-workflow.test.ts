@@ -48,10 +48,10 @@ describe('removeCustomDomain', () => {
     });
     expect(result.lifecycle).toBe('disabled');
     expect(result.removed.customDomains).toEqual(['bye.com', 'www.bye.com']);
-    expect(result.removed.dnsRecords).toEqual(['TXT _domainpilot.bye.com']);
+    expect(result.removed.dnsRecords).toEqual(['TXT _domainwright.bye.com']);
     expect(result.removed.zone).toBeNull();
     expect(result.retained).toContainEqual(
-      expect.objectContaining({ resource: 'dns:MX bye.com', reason: 'not created by DomainPilot' }),
+      expect.objectContaining({ resource: 'dns:MX bye.com', reason: 'not created by Domainwright' }),
     );
     expect(env.cf.customDomains).toHaveLength(0);
     expect(env.cf.zones).toHaveLength(1);
@@ -170,7 +170,7 @@ describe('removeCustomDomain: SaaS custom hostnames (#6)', () => {
 
   it('removes the hostname when the tenant has since removed the challenge', async () => {
     const { env, client, input } = await saasEnv();
-    env.dns.clear('_domainpilot.shop.tenant-a.com');
+    env.dns.clear('_domainwright.shop.tenant-a.com');
     const result = await client.workflows.removeCustomDomain({ ...input, tenantId: 'tenant-a' });
     expect(result.lifecycle).toBe('disabled');
     expect(env.cf.customHostnames).toHaveLength(0);

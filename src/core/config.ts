@@ -12,7 +12,7 @@ import type { Logger } from './logger.js';
  * SDK stores them only in memory and never logs or returns them. Create one client per
  * credential set (e.g. one for development, one for production).
  */
-export interface DomainPilotConfig {
+export interface DomainwrightConfig {
   /** Required for zone, DNS, Worker, verification and workflow operations. */
   cloudflare?: CloudflareConfig;
   /**
@@ -41,7 +41,7 @@ export function isRegistrarAdapter(value: unknown): value is RegistrarAdapter {
   );
 }
 
-export function validateConfig(config: DomainPilotConfig): void {
+export function validateConfig(config: DomainwrightConfig): void {
   if (!config || typeof config !== 'object') throw new ConfigurationError('A configuration object is required');
   if (!config.cloudflare && !config.registrar) {
     throw new ConfigurationError('Configure at least one provider: cloudflare and/or registrar');

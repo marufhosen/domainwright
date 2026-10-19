@@ -1,4 +1,4 @@
-import { DomainPilotError } from '../core/errors.js';
+import { DomainwrightError } from '../core/errors.js';
 
 export interface RetryPolicy {
   /** Maximum number of attempts, including the first one. Default 4. */
@@ -34,10 +34,10 @@ export function computeBackoff(attempt: number, policy: RetryPolicy, random: () 
   return policy.jitter ? Math.round(exp / 2 + (random() * exp) / 2) : exp;
 }
 
-export function abortError(signal?: AbortSignal): DomainPilotError {
+export function abortError(signal?: AbortSignal): DomainwrightError {
   const reason: unknown = signal?.reason;
-  if (reason instanceof DomainPilotError) return reason;
-  return new DomainPilotError('ABORTED', 'The operation was cancelled', { cause: reason });
+  if (reason instanceof DomainwrightError) return reason;
+  return new DomainwrightError('ABORTED', 'The operation was cancelled', { cause: reason });
 }
 
 export function throwIfAborted(signal?: AbortSignal): void {

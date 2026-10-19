@@ -11,11 +11,11 @@ import type { DnsRecord } from '../cloudflare/dns.js';
 import type { Zone } from '../cloudflare/zones.js';
 import {
   ConfigurationError,
-  DomainPilotError,
+  DomainwrightError,
   PurchaseError,
   TenantConflictError,
   ValidationError,
-  isDomainPilotError,
+  isDomainwrightError,
   serializeError,
 } from '../core/errors.js';
 import type { OutstandingAction, RoutingStrategy } from '../core/types.js';
@@ -83,7 +83,7 @@ class SetupRun {
   private zone: Zone | null = null;
   private tenantTag: string | undefined;
   private verification: VerificationReport | undefined;
-  private checkpointError: DomainPilotError | undefined;
+  private checkpointError: DomainwrightError | undefined;
 
   constructor(
     private readonly deps: WorkflowDeps,
@@ -158,7 +158,7 @@ class SetupRun {
         previous.strategy !== this.strategy ||
         previous.service !== this.service;
       if (mismatch) {
-        throw new DomainPilotError(
+        throw new DomainwrightError(
           'WORKFLOW_STATE_MISMATCH',
           'resumeFrom belongs to a different domain, tenant, strategy or Worker',
           {
@@ -331,7 +331,7 @@ class SetupRun {
             : `Registered (order ${result.orderId ?? 'n/a'})`,
       };
     } catch (error) {
-      const unknown = isDomainPilotError(error, 'PURCHASE_OUTCOME_UNKNOWN');
+      const unknown = isDomainwrightError(error, 'PURCHASE_OUTCOME_UNKNOWN');
       this.state.resources.registration = {
         ...this.state.resources.registration,
         status: unknown ? 'unknown' : 'failed',
@@ -351,7 +351,7 @@ class SetupRun {
       const zone = await cloudflare.zones.get(r.saasZoneId, this.signal);
       this.zone = zone;
       if (zone.status !== 'active') {
-        throw new DomainPilotError(
+        throw new DomainwrightError(
           'CONFIGURATION_ERROR',
           `SaaS zone ${zone.name} must be active before onboarding tenants`,
           { details: { zoneId: zone.id } },
@@ -369,7 +369,7 @@ class SetupRun {
       return { status: 'succeeded', message: `Reusing zone ${existing.name} (${existing.status})` };
     }
     if (!this.isOwnZone) {
-      throw new DomainPilotError('NOT_FOUND', `Zone ${this.zoneName} does not exist in the Cloudflare account`, {
+      throw new DomainwrightError('NOT_FOUND', `Zone ${this.zoneName} does not exist in the Cloudflare account`, {
         details: { zone: this.zoneName },
       });
     }
@@ -419,7 +419,7 @@ class SetupRun {
         : { status: 'succeeded', message: 'Tenant ownership verified for every hostname' };
     }
 
-    // Zone strategies: the marker lives in the zone at _domainpilot.<domain>.
+    // Zone strategies: the marker lives in the zone at _domainwright.<domain>.
     const challenge = await ownership.createChallenge({ hostname: this.domain, tenantId });
     if (!this.zone) {
       return {
@@ -512,7 +512,7 @@ class SetupRun {
       automatable: canAutomate,
       instructions:
         `Set the nameservers for ${this.domain} at its registrar to ${zone.nameservers.join(' and ')}.` +
-        (canAutomate ? ' DomainPilot can do this when nameservers.updateAtRegistrar is true.' : ''),
+        (canAutomate ? ' Domainwright can do this when nameservers.updateAtRegistrar is true.' : ''),
     };
 
     if (registered && sameNameservers(registered.nameservers, zone.nameservers)) {
@@ -642,7 +642,7 @@ class SetupRun {
 
     if (actions.length) {
       throw Object.assign(
-        new DomainPilotError(
+        new DomainwrightError(
           'CONFLICT',
           'Existing DNS records conflict with the requested routing; resolve them and resume',
           {
@@ -787,7 +787,7 @@ class SetupRun {
     if (report.verified) return { status: 'succeeded', message: 'Every required check passed' };
     if (report.summary === 'failed') {
       throw Object.assign(
-        new DomainPilotError(
+        new DomainwrightError(
           'PROVIDER_ERROR',
           `Verification failed: ${report.errors.map((e) => `${e.check}${e.hostname ? ` (${e.hostname})` : ''}: ${e.message}`).join('; ')}`,
           {
@@ -839,8 +839,8 @@ class SetupRun {
       hostname,
       records: records.map((r) => ({ id: r.id, type: r.type, content: r.content })),
       instructions: managed
-        ? `Records at ${hostname} were created by DomainPilot for this tenant; pass dns.replaceManagedRecords: true to replace them.`
-        : `Records at ${hostname} were not created by DomainPilot. Remove or change them deliberately (cloudflare.dns.delete with allowUnmanaged) before routing this hostname.`,
+        ? `Records at ${hostname} were created by Domainwright for this tenant; pass dns.replaceManagedRecords: true to replace them.`
+        : `Records at ${hostname} were not created by Domainwright. Remove or change them deliberately (cloudflare.dns.delete with allowUnmanaged) before routing this hostname.`,
     };
   }
 
@@ -895,7 +895,7 @@ class SetupRun {
       const actions = (error as { actions?: OutstandingAction[] }).actions;
       if (actions?.length) record.actions = actions;
       stop = true;
-      if (isDomainPilotError(error, 'ABORTED')) this.deps.logger.info('workflow cancelled', { step: id });
+      if (isDomainwrightError(error, 'ABORTED')) this.deps.logger.info('workflow cancelled', { step: id });
     }
     record.finishedAt = now();
     await this.checkpoint(false);
@@ -909,7 +909,7 @@ class SetupRun {
     try {
       await this.input.onCheckpoint(JSON.parse(JSON.stringify(this.state)) as SetupWorkflowState);
     } catch (error) {
-      this.checkpointError = new DomainPilotError(
+      this.checkpointError = new DomainwrightError(
         'CONFIGURATION_ERROR',
         'onCheckpoint failed; the workflow stopped so progress is not lost',
         {

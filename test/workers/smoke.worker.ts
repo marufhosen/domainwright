@@ -2,7 +2,7 @@
  * Runs inside workerd (the Cloudflare Workers runtime) to prove the published build uses
  * only Workers-compatible APIs. Provider calls go to an in-Worker mock, never the network.
  */
-import { DomainPilot, normalizeHostname } from '../../dist/index.js';
+import { Domainwright, normalizeHostname } from '../../dist/index.js';
 
 const ACCOUNT = 'a'.repeat(32);
 const ZONE_ID = 'b'.repeat(32);
@@ -31,7 +31,7 @@ const mockFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<
 
 export default {
   async fetch(): Promise<Response> {
-    const client = new DomainPilot({
+    const client = new Domainwright({
       cloudflare: { apiToken: 'x'.repeat(40), accountId: ACCOUNT },
       ownership: { secret: 's'.repeat(32) },
       http: { fetch: mockFetch, retry: false },

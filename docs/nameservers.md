@@ -13,11 +13,11 @@ zone.nameserverInstructions?.instructions; // ready-to-show text
 const ns = await client.cloudflare.zones.getNameservers('example.com');
 ```
 
-The workflow returns the same information as an `update-nameservers` outstanding action, including `automatable: true` when DomainPilot could make the change itself.
+The workflow returns the same information as an `update-nameservers` outstanding action, including `automatable: true` when Domainwright could make the change itself.
 
 ## Automatic change (domains in your registrar account)
 
-When the domain is in the configured registrar account (for example, bought through `domains.purchase`) and the adapter supports it, DomainPilot can set the nameservers, but only when you authorize it:
+When the domain is in the configured registrar account (for example, bought through `domains.purchase`) and the adapter supports it, Domainwright can set the nameservers, but only when you authorize it:
 
 ```ts
 await client.workflows.setupCustomDomain({ ...input, nameservers: { updateAtRegistrar: true } });

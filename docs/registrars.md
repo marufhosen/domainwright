@@ -22,7 +22,7 @@ registrar: {
 }
 ```
 
-| DomainPilot                               | name.com endpoint                                             |
+| Domainwright                              | name.com endpoint                                             |
 | ----------------------------------------- | ------------------------------------------------------------- |
 | `domains.check`, `domains.search` (exact) | `POST /core/v1/domains:checkAvailability` (50 names per call) |
 | `domains.search` (`includeSuggestions`)   | `POST /core/v1/domains:search`                                |
@@ -44,11 +44,11 @@ Requirements and limitations:
 
 ## Writing an adapter
 
-Implement `RegistrarAdapter` and declare only what the provider really supports. DomainPilot checks `capabilities` before every call and throws `UNSUPPORTED_OPERATION` instead of guessing.
+Implement `RegistrarAdapter` and declare only what the provider really supports. Domainwright checks `capabilities` before every call and throws `UNSUPPORTED_OPERATION` instead of guessing.
 
 ```ts
-import type { RegistrarAdapter } from '@your-scope/domainpilot/registrars';
-import { DomainPilot } from '@your-scope/domainpilot';
+import type { RegistrarAdapter } from 'domainwright/registrars';
+import { Domainwright } from 'domainwright';
 
 class MyRegistrar implements RegistrarAdapter {
   readonly id = 'my-registrar';
@@ -69,7 +69,7 @@ class MyRegistrar implements RegistrarAdapter {
   async getDomain(domain: string) { /* return null when not in the account */ }
 }
 
-const client = new DomainPilot({ registrar: new MyRegistrar(), cloudflare: { ... } });
+const client = new Domainwright({ registrar: new MyRegistrar(), cloudflare: { ... } });
 ```
 
 Adapter rules:

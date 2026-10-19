@@ -10,11 +10,11 @@
 
 import {
   ConfigurationError,
-  DomainPilotError,
+  DomainwrightError,
   type ErrorCode,
   ProviderError,
   PurchaseError,
-  isDomainPilotError,
+  isDomainwrightError,
 } from '../../core/errors.js';
 import { HttpClient, type HttpMethod, type HttpOptions } from '../../core/http.js';
 import { type Logger, createSafeLogger } from '../../core/logger.js';
@@ -301,7 +301,7 @@ export class NameComRegistrar implements RegistrarAdapter {
       });
       return this.mapDomain(raw);
     } catch (error) {
-      if (isDomainPilotError(error, 'NOT_FOUND')) return null;
+      if (isDomainwrightError(error, 'NOT_FOUND')) return null;
       throw error;
     }
   }
@@ -367,9 +367,9 @@ export class NameComRegistrar implements RegistrarAdapter {
     };
   }
 
-  private purchaseError(error: unknown, domain: string, idempotencyKey: string | undefined): DomainPilotError {
+  private purchaseError(error: unknown, domain: string, idempotencyKey: string | undefined): DomainwrightError {
     const details = { domain, ...(idempotencyKey ? { idempotencyKey } : {}) };
-    if (!isDomainPilotError(error)) {
+    if (!isDomainwrightError(error)) {
       return new PurchaseError('PURCHASE_OUTCOME_UNKNOWN', `The outcome of the purchase of ${domain} is unknown`, {
         provider: this.id,
         details,

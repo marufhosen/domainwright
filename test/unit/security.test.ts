@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConfigurationError, DomainPilot, redact } from '../../src/index.js';
+import { ConfigurationError, Domainwright, redact } from '../../src/index.js';
 import { createTestEnv } from '../fakes/env.js';
 
 describe('credential handling', () => {
@@ -32,24 +32,28 @@ describe('credential handling', () => {
 
   it('validates configuration without network calls', () => {
     const env = createTestEnv();
-    expect(() => new DomainPilot({})).toThrow(ConfigurationError);
-    expect(() => new DomainPilot({ cloudflare: { apiToken: 'short', accountId: 'a'.repeat(32) } })).toThrow(/apiToken/);
-    expect(() => new DomainPilot({ cloudflare: { apiToken: 'x'.repeat(40), accountId: 'nope' } })).toThrow(/accountId/);
+    expect(() => new Domainwright({})).toThrow(ConfigurationError);
+    expect(() => new Domainwright({ cloudflare: { apiToken: 'short', accountId: 'a'.repeat(32) } })).toThrow(
+      /apiToken/,
+    );
+    expect(() => new Domainwright({ cloudflare: { apiToken: 'x'.repeat(40), accountId: 'nope' } })).toThrow(
+      /accountId/,
+    );
     expect(
       () =>
-        new DomainPilot({
+        new Domainwright({
           registrar: { provider: 'namecom', username: 'me', apiToken: 'token1234', environment: 'sandbox' },
         }),
     ).toThrow(/-test/);
     expect(
       () =>
-        new DomainPilot({
+        new Domainwright({
           registrar: { provider: 'namecom', username: 'me-test', apiToken: 'token1234', environment: 'production' },
         }),
     ).toThrow(/production/);
     expect(
       () =>
-        new DomainPilot({
+        new Domainwright({
           cloudflare: { apiToken: 'x'.repeat(40), accountId: 'a'.repeat(32) },
           ownership: { secret: 'short' },
         }),
@@ -59,7 +63,7 @@ describe('credential handling', () => {
   });
 
   it('throws a configuration error when an unconfigured module is used', () => {
-    const client = new DomainPilot({ cloudflare: { apiToken: 'x'.repeat(40), accountId: 'a'.repeat(32) } });
+    const client = new Domainwright({ cloudflare: { apiToken: 'x'.repeat(40), accountId: 'a'.repeat(32) } });
     expect(() => client.registrar).toThrow(ConfigurationError);
     expect(() => client.ownership).toThrow(ConfigurationError);
   });

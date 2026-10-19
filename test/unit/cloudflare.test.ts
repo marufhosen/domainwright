@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConfirmationRequiredError, TenantConflictError, isDomainPilotError } from '../../src/index.js';
+import { ConfirmationRequiredError, TenantConflictError, isDomainwrightError } from '../../src/index.js';
 import { createTestEnv } from '../fakes/env.js';
 
 describe('cloudflare.zones', () => {
@@ -72,7 +72,7 @@ describe('cloudflare.zones', () => {
       .client()
       .cloudflare.zones.find('example.com')
       .catch((e: unknown) => e);
-    expect(isDomainPilotError(error, 'PERMISSION_DENIED')).toBe(true);
+    expect(isDomainwrightError(error, 'PERMISSION_DENIED')).toBe(true);
   });
 
   it('retries rate-limited reads', async () => {
@@ -206,7 +206,7 @@ describe('cloudflare.dns', () => {
       changes: { content: '192.0.2.2' },
     });
     expect(updated.content).toBe('192.0.2.2');
-    expect(updated.comment).toBe('app server [domainpilot t=abc]');
+    expect(updated.comment).toBe('app server [domainwright t=abc]');
     expect(updated.tenantTag).toBe('abc');
   });
 });

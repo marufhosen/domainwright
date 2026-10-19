@@ -1,4 +1,4 @@
-/** In-memory fake of the name.com Core API endpoints DomainPilot uses. */
+/** In-memory fake of the name.com Core API endpoints Domainwright uses. */
 
 export interface FakeNameComDomain {
   domainName: string;

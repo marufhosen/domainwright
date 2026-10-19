@@ -3,7 +3,7 @@
  * including Cloudflare Workers, which have no raw DNS sockets.
  */
 
-import { DomainPilotError, isDomainPilotError } from '../core/errors.js';
+import { DomainwrightError, isDomainwrightError } from '../core/errors.js';
 import { HttpClient } from '../core/http.js';
 import type { RequestOptions } from '../core/types.js';
 
@@ -67,12 +67,12 @@ export class DohResolver implements DnsResolver {
       }
       body = response.body ?? {};
     } catch (error) {
-      if (isDomainPilotError(error, 'ABORTED')) throw error;
+      if (isDomainwrightError(error, 'ABORTED')) throw error;
       return {
         status: 'error',
         values: [],
         answers: [],
-        error: error instanceof DomainPilotError ? error.code : 'lookup failed',
+        error: error instanceof DomainwrightError ? error.code : 'lookup failed',
       };
     }
 

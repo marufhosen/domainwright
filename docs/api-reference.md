@@ -2,24 +2,24 @@
 
 This page lists every public export by entry point. Behaviour and examples are in the [module guide](modules.md), [workflows](workflows.md), [verification](verification.md) and [errors](errors.md). The TypeScript declarations shipped in `dist/` are the source of truth for every field.
 
-Replace `@your-scope/domainpilot` with your package name (see [CONTRIBUTING.md](../CONTRIBUTING.md#releasing)).
+Replace `domainwright` with your package name (see [CONTRIBUTING.md](../CONTRIBUTING.md#releasing)).
 
-| Entry point                                  | Contents                                                           |
-| -------------------------------------------- | ------------------------------------------------------------------ |
-| `@your-scope/domainpilot`                    | Everything below, plus the `DomainPilot` client                    |
-| `@your-scope/domainpilot/cloudflare`         | `CloudflareClient` and its modules                                 |
-| `@your-scope/domainpilot/registrars`         | `RegistrarAdapter` types and `NameComRegistrar`                    |
-| `@your-scope/domainpilot/registrars/namecom` | `NameComRegistrar`, `NameComConfig`                                |
-| `@your-scope/domainpilot/verification`       | `DomainVerifier`, `DohResolver`, `probeHttps`, `OwnershipModule`   |
-| `@your-scope/domainpilot/workflows`          | Workflow functions and state types                                 |
-| `@your-scope/domainpilot/errors`             | Error classes, `ErrorCode`, `isDomainPilotError`, `serializeError` |
+| Entry point                       | Contents                                                            |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `domainwright`                    | Everything below, plus the `Domainwright` client                    |
+| `domainwright/cloudflare`         | `CloudflareClient` and its modules                                  |
+| `domainwright/registrars`         | `RegistrarAdapter` types and `NameComRegistrar`                     |
+| `domainwright/registrars/namecom` | `NameComRegistrar`, `NameComConfig`                                 |
+| `domainwright/verification`       | `DomainVerifier`, `DohResolver`, `probeHttps`, `OwnershipModule`    |
+| `domainwright/workflows`          | Workflow functions and state types                                  |
+| `domainwright/errors`             | Error classes, `ErrorCode`, `isDomainwrightError`, `serializeError` |
 
 Every method that calls a provider accepts an optional `signal: AbortSignal` (in its input object or a trailing `options` argument).
 
-## `DomainPilot`
+## `Domainwright`
 
 ```ts
-new DomainPilot(config: DomainPilotConfig)
+new Domainwright(config: DomainwrightConfig)
 ```
 
 | Config field | Type                                                                        | Notes                                                           |
@@ -135,7 +135,7 @@ Use the methods on `client.workflows` unless you are wiring dependencies yoursel
 
 ## Errors
 
-`DomainPilotError` has `code: ErrorCode`, `retryable`, `provider`, `status`, `providerErrors`, `details` and `toJSON()`. Subclasses: `ValidationError`, `ConfigurationError`, `ProviderError`, `UnsupportedOperationError`, `ConfirmationRequiredError`, `TenantConflictError`, `PurchaseError`. Helpers: `isDomainPilotError(error, code?)`, `serializeError(error)`. Codes are listed in [errors](errors.md).
+`DomainwrightError` has `code: ErrorCode`, `retryable`, `provider`, `status`, `providerErrors`, `details` and `toJSON()`. Subclasses: `ValidationError`, `ConfigurationError`, `ProviderError`, `UnsupportedOperationError`, `ConfirmationRequiredError`, `TenantConflictError`, `PurchaseError`. Helpers: `isDomainwrightError(error, code?)`, `serializeError(error)`. Codes are listed in [errors](errors.md).
 
 ## Shared types and utilities
 

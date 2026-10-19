@@ -2,7 +2,7 @@
  * Registrar provider adapter contract.
  *
  * Adapters isolate provider-specific APIs. Each adapter declares which operations it
- * supports through `capabilities`; DomainPilot never assumes a registrar supports an
+ * supports through `capabilities`; Domainwright never assumes a registrar supports an
  * operation it does not declare, and throws `UNSUPPORTED_OPERATION` instead.
  */
 

@@ -1,5 +1,5 @@
 /**
- * In-memory fake of the Cloudflare API v4 endpoints DomainPilot uses. It mirrors the
+ * In-memory fake of the Cloudflare API v4 endpoints Domainwright uses. It mirrors the
  * documented envelope (`success`, `errors`, `result`, `result_info`) and behaviours that
  * matter for safety tests (duplicate zones, CNAME conflicts, attach upserts).
  */

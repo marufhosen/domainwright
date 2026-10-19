@@ -1,7 +1,7 @@
 /**
- * Safe removal. Only resources DomainPilot can attribute to this domain, Worker and tenant
+ * Safe removal. Only resources Domainwright can attribute to this domain, Worker and tenant
  * are removed; everything else is reported in `retained`. The zone is deleted only on
- * explicit request and only when it contains nothing but DomainPilot-managed records.
+ * explicit request and only when it contains nothing but Domainwright-managed records.
  */
 
 import type { DnsRecord } from '../cloudflare/dns.js';
@@ -9,7 +9,7 @@ import { routeMatchesHostname } from '../cloudflare/workers.js';
 import type { Zone } from '../cloudflare/zones.js';
 import {
   ConfirmationRequiredError,
-  DomainPilotError,
+  DomainwrightError,
   TenantConflictError,
   ValidationError,
   serializeError,
@@ -216,7 +216,7 @@ export async function removeCustomDomain(
         if (!isRemovable(record, tenantTag)) {
           result.retained.push({
             resource: `dns:${record.type} ${record.name}`,
-            reason: record.managed ? 'managed for a different tenant' : 'not created by DomainPilot',
+            reason: record.managed ? 'managed for a different tenant' : 'not created by Domainwright',
           });
           continue;
         }
@@ -253,7 +253,7 @@ export async function removeCustomDomain(
     if (foreign.length) {
       result.retained.push({
         resource: `zone:${z.name}`,
-        reason: `${foreign.length} record(s) not managed by DomainPilot remain`,
+        reason: `${foreign.length} record(s) not managed by Domainwright remain`,
       });
       return 'Zone not deleted: it contains unmanaged records';
     }
@@ -266,8 +266,8 @@ export async function removeCustomDomain(
   return finish();
 }
 
-function challengeLookupError(hostname: string): DomainPilotError {
-  return new DomainPilotError('NETWORK_ERROR', `Could not look up the ownership challenge for ${hostname}`, {
+function challengeLookupError(hostname: string): DomainwrightError {
+  return new DomainwrightError('NETWORK_ERROR', `Could not look up the ownership challenge for ${hostname}`, {
     provider: 'dns',
     retryable: true,
     details: { hostname },

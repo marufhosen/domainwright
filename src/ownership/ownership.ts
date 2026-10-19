@@ -6,7 +6,7 @@
  * derived (not stored), the SDK needs no database, and a record published for tenant A
  * can never verify the same hostname for tenant B.
  *
- * The same token doubles as the ownership marker DomainPilot writes into zones it
+ * The same token doubles as the ownership marker Domainwright writes into zones it
  * manages, so a zone already claimed by one tenant cannot be silently reused by another.
  */
 
@@ -22,7 +22,7 @@ export interface OwnershipConfig {
    * invalidates existing challenges and markers.
    */
   secret: string;
-  /** Label prefix for challenge records. Default `_domainpilot`. */
+  /** Label prefix for challenge records. Default `_domainwright`. */
   recordPrefix?: string;
 }
 
@@ -47,7 +47,7 @@ export interface OwnershipVerificationResult {
   record: OwnershipChallenge['record'];
 }
 
-const VALUE_PREFIX = 'domainpilot-verification=';
+const VALUE_PREFIX = 'domainwright-verification=';
 
 export class OwnershipModule {
   private readonly secret: string;
@@ -61,7 +61,7 @@ export class OwnershipModule {
       throw new ConfigurationError('ownership.secret must be at least 32 characters', { field: 'ownership.secret' });
     }
     this.secret = config.secret;
-    this.recordPrefix = config.recordPrefix ?? '_domainpilot';
+    this.recordPrefix = config.recordPrefix ?? '_domainwright';
     if (!/^_[a-z0-9-]{1,62}$/.test(this.recordPrefix)) {
       throw new ConfigurationError('ownership.recordPrefix must be a label starting with "_"', {
         field: 'ownership.recordPrefix',
@@ -77,7 +77,7 @@ export class OwnershipModule {
   }
 
   /**
-   * Short opaque tag identifying a tenant, stored in the comment of DNS records DomainPilot
+   * Short opaque tag identifying a tenant, stored in the comment of DNS records Domainwright
    * creates. It does not reveal the tenant ID.
    */
   async tenantTag(tenantId: string): Promise<string> {
@@ -97,7 +97,7 @@ export class OwnershipModule {
     };
   }
 
-  /** True when `content` is a DomainPilot challenge value (for any tenant). */
+  /** True when `content` is a Domainwright challenge value (for any tenant). */
   isChallengeValue(content: string): boolean {
     return content.replace(/^"|"$/g, '').startsWith(VALUE_PREFIX);
   }
@@ -109,7 +109,7 @@ export class OwnershipModule {
   }
 
   /**
-   * DomainPilot challenge values (for any tenant) published in public DNS for `hostname`.
+   * Domainwright challenge values (for any tenant) published in public DNS for `hostname`.
    * `status: 'error'` means the lookup failed and nothing can be concluded.
    */
   async publishedChallenges(

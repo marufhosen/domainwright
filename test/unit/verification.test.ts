@@ -14,7 +14,7 @@ describe('ownership challenges', () => {
     const a2 = await ownership.createChallenge({ hostname: 'SHOP.example', tenantId: 'tenant-a' });
     const b = await ownership.createChallenge({ hostname: 'shop.example', tenantId: 'tenant-b' });
     expect(a.record).toEqual(a2.record);
-    expect(a.record.name).toBe('_domainpilot.shop.example');
+    expect(a.record.name).toBe('_domainwright.shop.example');
     expect(a.record.content).not.toEqual(b.record.content);
     expect(await ownership.matches(a.record.content, 'shop.example', 'tenant-a')).toBe(true);
     expect(await ownership.matches(a.record.content, 'shop.example', 'tenant-b')).toBe(false);

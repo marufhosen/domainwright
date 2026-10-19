@@ -65,7 +65,7 @@ export function createConsoleLogger(minLevel: LogLevel = 'info'): Logger {
   const emit = (level: LogLevel, message: string, fields?: LogFields): void => {
     if (!enabled(level)) return;
     const line = fields ? `${message} ${JSON.stringify(redact(fields))}` : message;
-    console[level === 'debug' ? 'log' : level](`[domainpilot] ${line}`);
+    console[level === 'debug' ? 'log' : level](`[domainwright] ${line}`);
   };
   return {
     debug: (m, f) => {
