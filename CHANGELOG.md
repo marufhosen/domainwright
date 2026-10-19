@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- `setupCustomDomain` records registrations the registrar reports as `pending` or `action-required` with that status instead of `registered`, so a resumed run keeps waiting (checking the registrar account) instead of reporting the registration as complete. `action-required` now returns a `manual` action ([#2](https://github.com/marufhosen/domain-pilot/issues/2)).
+
 ## [0.1.0] - Unreleased
 
 Initial version.
