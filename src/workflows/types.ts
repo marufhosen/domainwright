@@ -44,7 +44,11 @@ export interface StepRecord<Id extends string = string> {
 
 export interface RegistrationState {
   /** `submitting` is persisted *before* the purchase request is sent. */
-  status: 'submitting' | 'registered' | 'already-owned' | 'unknown' | 'failed';
+  /**
+   * `pending` / `action-required`: the registrar accepted the order but has not completed it.
+   * A resumed run checks the registrar account and never submits the order again.
+   */
+  status: 'submitting' | 'registered' | 'already-owned' | 'pending' | 'action-required' | 'unknown' | 'failed';
   idempotencyKey: string;
   submittedAt?: string;
   orderId?: string;

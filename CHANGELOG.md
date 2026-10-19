@@ -12,6 +12,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - `setupCustomDomain` no longer drops the idempotency key of an earlier purchase attempt when the pre-purchase `onCheckpoint` fails on resume, which could let a later resume buy the domain again under a new key ([#1](https://github.com/marufhosen/domain-pilot/issues/1)).
 - `removeCustomDomain` with `saas-custom-hostname` routing now checks the tenant's ownership challenge and refuses with `TENANT_CONFLICT` when it belongs to a different tenant, instead of removing any tenant's custom hostname ([#6](https://github.com/marufhosen/domain-pilot/issues/6)).
+- `setupCustomDomain` records registrations the registrar reports as `pending` or `action-required` with that status instead of `registered`, so a resumed run keeps waiting (checking the registrar account) instead of reporting the registration as complete. `action-required` now returns a `manual` action ([#2](https://github.com/marufhosen/domain-pilot/issues/2)).
 
 ## [0.1.0] - Unreleased
 

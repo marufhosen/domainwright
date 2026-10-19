@@ -52,6 +52,16 @@ type StepOutcome = Pick<StepRecord, 'status' | 'message' | 'actions' | 'planned'
 
 class StopWorkflow extends Error {}
 
+function registrationAction(status: 'pending' | 'action-required'): OutstandingAction {
+  return status === 'pending'
+    ? { type: 'wait', reason: 'Registry completion' }
+    : {
+        type: 'manual',
+        instructions:
+          'The registrar needs an action before it completes the registration (for example contact verification or registry documents). Complete it in the registrar account, then resume.',
+      };
+}
+
 export async function setupCustomDomain(
   deps: WorkflowDeps,
   input: SetupCustomDomainInput,
@@ -218,7 +228,8 @@ class SetupRun {
       return { status: 'succeeded', message: `${this.domain} was registered by a previous run` };
     }
 
-    if (existing && (existing.status === 'submitting' || existing.status === 'unknown')) {
+    const accepted = existing?.status === 'pending' || existing?.status === 'action-required';
+    if (existing && (accepted || existing.status === 'submitting' || existing.status === 'unknown')) {
       // A previous run sent (or may have sent) the purchase. Never buy twice.
       if (supports(registrar, 'getDomain')) {
         const owned = await registrar.getDomain!(this.domain, this.signal);
@@ -233,6 +244,14 @@ class SetupRun {
             message: `${this.domain} is registered in the ${registrar.displayName} account`,
           };
         }
+      }
+      if (accepted) {
+        // The registrar accepted the order earlier; repeating it could buy twice. Keep waiting.
+        return {
+          status: 'waiting',
+          message: `Registration of ${this.domain} is still ${existing.status} at the registrar`,
+          actions: [registrationAction(existing.status as 'pending' | 'action-required')],
+        };
       }
       const age = existing.submittedAt ? Date.now() - Date.parse(existing.submittedAt) : Infinity;
       if (!registrar.capabilities.idempotentRegistration || age > IDEMPOTENCY_WINDOW_MS) {
@@ -289,8 +308,9 @@ class SetupRun {
         ...(reg.autoRenew === undefined ? {} : { autoRenew: reg.autoRenew }),
         ...this.signal,
       });
+      // Record what the registrar actually reported: a pending order is not a registration.
       this.state.resources.registration = {
-        status: result.status === 'already-owned' ? 'already-owned' : 'registered',
+        status: result.status,
         idempotencyKey,
         submittedAt: this.state.resources.registration.submittedAt!,
         ...(result.orderId ? { orderId: result.orderId } : {}),
@@ -300,7 +320,7 @@ class SetupRun {
         return {
           status: 'waiting',
           message: `Registration is ${result.status} at the registrar`,
-          actions: [{ type: 'wait', reason: 'Registry completion' }],
+          actions: [registrationAction(result.status)],
         };
       }
       return {
