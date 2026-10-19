@@ -1,0 +1,99 @@
+{
+  "name": "@your-scope/domainpilot",
+  "version": "0.1.0",
+  "description": "Modular TypeScript SDK for custom-domain onboarding in multi-tenant SaaS apps on Cloudflare Workers: search, registration, zones, DNS, Worker routing, verification and resumable workflows.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cloudflare": {
+      "types": "./dist/cloudflare/index.d.ts",
+      "default": "./dist/cloudflare/index.js"
+    },
+    "./registrars": {
+      "types": "./dist/registrars/index.d.ts",
+      "default": "./dist/registrars/index.js"
+    },
+    "./registrars/namecom": {
+      "types": "./dist/registrars/namecom/index.d.ts",
+      "default": "./dist/registrars/namecom/index.js"
+    },
+    "./verification": {
+      "types": "./dist/verification/index.d.ts",
+      "default": "./dist/verification/index.js"
+    },
+    "./workflows": {
+      "types": "./dist/workflows/index.d.ts",
+      "default": "./dist/workflows/index.js"
+    },
+    "./errors": {
+      "types": "./dist/core/errors.d.ts",
+      "default": "./dist/core/errors.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "docs"
+  ],
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "custom-domains",
+    "dns",
+    "domain-registration",
+    "multi-tenant",
+    "saas",
+    "name.com"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:sandbox": "vitest run --config vitest.sandbox.config.ts",
+    "check:package": "npm run build && publint && npm pack --dry-run",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build",
+    "test:workers": "npm run build && node test/workers/run-smoke.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/domainpilot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/domainpilot/issues"
+  },
+  "homepage": "https://github.com/your-org/domainpilot#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "miniflare": "^4.20260730.0",
+    "prettier": "^3.9.10",
+    "publint": "^0.3.25",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}
