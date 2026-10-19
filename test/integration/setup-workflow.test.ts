@@ -163,6 +163,15 @@ describe('setupCustomDomain: purchase', () => {
     expect(result.state.resources.registration).toBeUndefined();
   });
 
+  it('stops on a payment failure without touching Cloudflare', async () => {
+    const env = createTestEnv();
+    env.namecom.nextCreate = 'payment';
+    const result = await env.client().workflows.setupCustomDomain(purchase);
+    expect(result.errors[0]).toMatchObject({ code: 'PAYMENT_FAILED' });
+    expect(result.lifecycle).toBe('failed');
+    expect(env.cf.zones).toHaveLength(0);
+  });
+
   it('records pending registrations as pending and never resubmits them (#2)', async () => {
     const env = createTestEnv();
     let registerCalls = 0;
@@ -249,15 +258,6 @@ describe('setupCustomDomain: purchase', () => {
     expect(other.steps.find((s) => s.id === 'registration')?.actions).toEqual([
       expect.objectContaining({ type: 'manual' }),
     ]);
-  });
-
-  it('stops on a payment failure without touching Cloudflare', async () => {
-    const env = createTestEnv();
-    env.namecom.nextCreate = 'payment';
-    const result = await env.client().workflows.setupCustomDomain(purchase);
-    expect(result.errors[0]).toMatchObject({ code: 'PAYMENT_FAILED' });
-    expect(result.lifecycle).toBe('failed');
-    expect(env.cf.zones).toHaveLength(0);
   });
 });
 
