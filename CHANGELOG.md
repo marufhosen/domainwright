@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- `setupCustomDomain` no longer drops the idempotency key of an earlier purchase attempt when the pre-purchase `onCheckpoint` fails on resume, which could let a later resume buy the domain again under a new key ([#1](https://github.com/marufhosen/domain-pilot/issues/1)).
+
 ## [0.1.0] - Unreleased
 
 Initial version.
