@@ -2,6 +2,8 @@
 
 This guide adds tenant custom domains to a Next.js SaaS application deployed on Cloudflare Workers (for example with the OpenNext Cloudflare adapter). DomainPilot runs on the server side only: in route handlers, server actions, a separate Worker, or a queue consumer. Never ship provider credentials to the browser.
 
+For a Next.js app on Node.js (Vercel or self-hosted), or a React front end with a separate backend, start with [Using DomainPilot with React and Next.js](react-and-nextjs.md).
+
 ## 1. Install and store secrets
 
 ```sh
