@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Fixed
 
 - `verify({ checks })` now runs the prerequisites of the requested checks (for example `zone` for `routing`, `certificate` and `dns-resolution` for `https`) instead of reporting them `blocked`, so a restricted verification can pass. Failed or errored prerequisites are included in the report ([#3](https://github.com/marufhosen/domain-pilot/issues/3)).
+- A registrar lookup that throws (bad credentials, outage, rate limit) no longer turns the verification report into `error`: the informational `registration` check reports `error` with `required: false` and readiness is decided by the other checks ([#5](https://github.com/marufhosen/domain-pilot/issues/5)).
 
 ## [0.1.0] - Unreleased
 
