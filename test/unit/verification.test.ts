@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CheckResult } from '../../src/index.js';
+import type { CheckId, CheckResult } from '../../src/index.js';
 import { decodeTxt } from '../../src/verification/resolver.js';
 import { createTestEnv } from '../fakes/env.js';
 
@@ -126,6 +126,48 @@ describe('domains.verify', () => {
     });
     expect(report.verified).toBe(true);
     expect(report.attempts).toBeGreaterThan(1);
+  });
+
+  describe('restricted with `checks` (#3)', () => {
+    async function readyDomain() {
+      const env = createTestEnv();
+      const zone = env.cf.addZone('ready.com', 'active');
+      const client = env.client();
+      await client.cloudflare.workers.customDomains.attach({ hostname: 'ready.com', service: 'app', zoneId: zone.id });
+      env.dns.set('ready.com', 'A', ['104.21.0.1']);
+      env.sites.set('ready.com', () => new Response('ok'));
+      return { env, client };
+    }
+
+    it.each<[CheckId[]]>([[['routing']], [['https']], [['certificate']], [['dns-resolution']], [['routing', 'https']]])(
+      'evaluates %j on a ready domain and reports only the requested checks',
+      async (checks) => {
+        const { client } = await readyDomain();
+        const report = await client.domains.verify({ domain: 'ready.com', worker: { name: 'app' }, checks });
+        expect(report.verified).toBe(true);
+        expect(report.summary).toBe('verified');
+        expect(new Set(report.checks.map((c) => c.id))).toEqual(new Set(checks));
+        expect(report.checks.every((c) => c.status === 'passed')).toBe(true);
+      },
+    );
+
+    it('surfaces a failed prerequisite that explains a blocked check', async () => {
+      const env = createTestEnv();
+      const report = await env.client().domains.verify({ domain: 'missing.com', checks: ['routing'] });
+      expect(report.summary).toBe('failed');
+      expect(byId(report.checks, 'zone')?.status).toBe('failed');
+      expect(byId(report.checks, 'routing')?.status).toBe('blocked');
+      expect(report.errors.map((e) => e.check)).toEqual(['zone']);
+    });
+
+    it('does not run checks outside the requested set and their prerequisites', async () => {
+      const { env, client } = await readyDomain();
+      const before = env.requests.length;
+      await client.domains.verify({ domain: 'ready.com', checks: ['zone'] });
+      const made = env.requests.slice(before);
+      expect(made.some((r) => r.includes('ready.com/'))).toBe(false); // no HTTPS probe
+      expect(made.some((r) => r.includes('/workers/domains'))).toBe(false); // no routing lookup
+    });
   });
 
   it('times out with the last observed state', async () => {

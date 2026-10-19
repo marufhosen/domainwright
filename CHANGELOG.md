@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- `verify({ checks })` now runs the prerequisites of the requested checks (for example `zone` for `routing`, `certificate` and `dns-resolution` for `https`) instead of reporting them `blocked`, so a restricted verification can pass. Failed or errored prerequisites are included in the report ([#3](https://github.com/marufhosen/domain-pilot/issues/3)).
+
 ## [0.1.0] - Unreleased
 
 Initial version.
